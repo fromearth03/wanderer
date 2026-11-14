@@ -99,7 +99,17 @@ function ModelView({ showPartList = true, initialExploded = false, initialFocalP
             {/* cool rim light from behind, earthshine from below */}
             <directionalLight position={[3, 1.5, -5]} intensity={1.4} color="#9db8ff" />
             <directionalLight position={[1, -5, 1]} intensity={0.35} color="#7fa3d9" />
-            <ContactShadows key={exploded ? 'x' : 'a'} position={[0, -1.36, 0]} scale={6} blur={2.6} far={3} opacity={0.45} frames={90} resolution={256} color="#000000" />
+            <ContactShadows
+              key={exploded ? 'x' : 'a'}
+              position={[0, -1.36, 0]}
+              scale={6}
+              blur={2.6}
+              far={3}
+              opacity={0.45}
+              frames={90}
+              resolution={256}
+              color="#000000"
+            />
             <Spin on={spin} />
             <Fit exploded={exploded}>
               <SpherexSpacecraft

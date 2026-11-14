@@ -526,7 +526,10 @@ function Comet({ data, jdRef, R, accent }: { data: OrbitData; jdRef: MutableRefO
     },
     [geo, mat],
   );
-  const tmp = useMemo(() => ({ n: new THREE.Vector3(), s: new THREE.Vector3(), v: new THREE.Vector3(), u: new THREE.Vector3(), w: new THREE.Vector3() }), []);
+  const tmp = useMemo(
+    () => ({ n: new THREE.Vector3(), s: new THREE.Vector3(), v: new THREE.Vector3(), u: new THREE.Vector3(), w: new THREE.Vector3() }),
+    [],
+  );
   const last = useRef(NaN);
   useFrame(() => {
     const jd = jdRef.current;
@@ -630,7 +633,11 @@ function HelioScene({ data, jdRef, marks, view, speeds }: SceneProps) {
 
   // SPHEREx frame times: one instanced mesh
   const markMesh = useMemo(() => {
-    const m = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), new THREE.MeshBasicMaterial({ color: pal.det[2] }), Math.max(1, marks.length));
+    const m = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(1, 10, 8),
+      new THREE.MeshBasicMaterial({ color: pal.det[2] }),
+      Math.max(1, marks.length),
+    );
     m.count = marks.length;
     return m;
   }, [marks.length, pal.det]);
@@ -683,7 +690,11 @@ function HelioScene({ data, jdRef, marks, view, speeds }: SceneProps) {
   useEffect(() => {
     const d = R * 2.6;
     goal.current =
-      view === 'top' ? new THREE.Vector3(0, d, 0.0001) : view === 'side' ? new THREE.Vector3(0, 0.0001, d) : new THREE.Vector3(0, d * 0.55, d * 0.85);
+      view === 'top'
+        ? new THREE.Vector3(0, d, 0.0001)
+        : view === 'side'
+          ? new THREE.Vector3(0, 0.0001, d)
+          : new THREE.Vector3(0, d * 0.55, d * 0.85);
   }, [view, R]);
   useFrame((_, dt) => {
     if (!goal.current) return;
@@ -694,7 +705,15 @@ function HelioScene({ data, jdRef, marks, view, speeds }: SceneProps) {
   });
 
   const corona = useMemo(
-    () => new THREE.SpriteMaterial({ map: dotTexture(), color: new THREE.Color(4, 3.4, 2.4), blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, fog: false }),
+    () =>
+      new THREE.SpriteMaterial({
+        map: dotTexture(),
+        color: new THREE.Color(4, 3.4, 2.4),
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        toneMapped: false,
+        fog: false,
+      }),
     [],
   );
   useEffect(() => () => corona.dispose(), [corona]);

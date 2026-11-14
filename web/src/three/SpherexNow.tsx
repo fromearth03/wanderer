@@ -89,7 +89,7 @@ function sample(sat: SatRec, ms: number): State {
   return {
     ok: true,
     lat: (geo.latitude * 180) / Math.PI,
-    lon: ((((geo.longitude * 180) / Math.PI + 540) % 360) - 180),
+    lon: (((geo.longitude * 180) / Math.PI + 540) % 360) - 180,
     alt: geo.height,
     speed: Math.hypot(v.x, v.y, v.z),
     ms,
@@ -118,7 +118,13 @@ export default function SpherexNow({
   const [rate, setRate] = useState(1);
   const [follow, setFollow] = useState(false);
   // the readout is written straight into the DOM 4 times a second: no React renders while it runs
-  const out = useRef<Record<'utc' | 'lat' | 'lon' | 'alt' | 'speed', HTMLElement | null>>({ utc: null, lat: null, lon: null, alt: null, speed: null });
+  const out = useRef<Record<'utc' | 'lat' | 'lon' | 'alt' | 'speed', HTMLElement | null>>({
+    utc: null,
+    lat: null,
+    lon: null,
+    alt: null,
+    speed: null,
+  });
   // the 2D fallback map only needs a fresh position every few seconds
   const [slow, setSlow] = useState<State | null>(null);
 
@@ -247,10 +253,9 @@ export default function SpherexNow({
             <dd ref={bind('speed')}>-</dd>
           </dl>
           <div className="w3-readout-foot">
-            Polar orbit, NORAD 63182. Elements:{' '}
-            {tle ? `${tle.source}, epoch ${tle.epoch.slice(0, 16).replace('T', ' ')} UTC` : 'loading'}
-            {tleNote ? `, ${tleNote}` : ''}. Spacecraft drawn about {ENLARGEMENT.toLocaleString('en-US')} times true size so it can be
-            seen; Earth, orbit and Sun direction are to scale.
+            Polar orbit, NORAD 63182. Elements: {tle ? `${tle.source}, epoch ${tle.epoch.slice(0, 16).replace('T', ' ')} UTC` : 'loading'}
+            {tleNote ? `, ${tleNote}` : ''}. Spacecraft drawn about {ENLARGEMENT.toLocaleString('en-US')} times true size so it can be seen;
+            Earth, orbit and Sun direction are to scale.
           </div>
         </div>
       ) : null}
@@ -262,7 +267,17 @@ export default function SpherexNow({
 // 3D scene
 // ---------------------------------------------------------------------------
 
-function NowCanvas({ sat, clock, follow, interactive }: { sat: SatRec; clock: MutableRefObject<Clock>; follow: boolean; interactive: boolean }) {
+function NowCanvas({
+  sat,
+  clock,
+  follow,
+  interactive,
+}: {
+  sat: SatRec;
+  clock: MutableRefObject<Clock>;
+  follow: boolean;
+  interactive: boolean;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const inView = useInView(box);
   const [low, setLow] = useState(false);
@@ -355,7 +370,11 @@ void main() {
 
 /** Low-res textures first (fast suspense), the 2k ones swapped in when loaded. */
 function useEarthTextures() {
-  const [dayLo, nightLo, ocean] = useTexture(['/textures/earth-day-512.webp', '/textures/earth-night-512.webp', '/textures/earth-ocean-1k.webp']);
+  const [dayLo, nightLo, ocean] = useTexture([
+    '/textures/earth-day-512.webp',
+    '/textures/earth-night-512.webp',
+    '/textures/earth-ocean-1k.webp',
+  ]);
   const [hi, setHi] = useState<[THREE.Texture, THREE.Texture] | null>(null);
   const gl = useThree((s) => s.gl);
   useEffect(() => {
@@ -643,7 +662,12 @@ function GroundTrackStill({ sat, st }: { sat: SatRec | null; st: State | null })
   }, [sat, st]);
   return (
     <figure className="w3-still w3-map">
-      <svg viewBox="0 0 360 180" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map of Earth with the current ground track of SPHEREx">
+      <svg
+        viewBox="0 0 360 180"
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label="Map of Earth with the current ground track of SPHEREx"
+      >
         <image href="/textures/earth-day-2k.webp" x="0" y="0" width="360" height="180" preserveAspectRatio="none" />
         {track.map((pts, i) => (
           <polyline key={i} points={pts} fill="none" stroke={pal.accent} strokeWidth={0.6} />

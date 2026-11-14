@@ -320,8 +320,7 @@ function Part({ id, info, progress, hovered, interactive, ghost, explodedTarget,
   }, [ghost, explodedTarget, mats, invalidate]);
 
   useEffect(
-    () => () =>
-      Object.values(mats).forEach((m) => m.dispose()), // textures are shared, kept for the page's lifetime
+    () => () => Object.values(mats).forEach((m) => m.dispose()), // textures are shared, kept for the page's lifetime
     [mats],
   );
 
@@ -522,11 +521,17 @@ export function SpherexSpacecraft({
             {Array.from({ length: 12 }, (_, k) => {
               const a = (k / 12) * Math.PI * 2;
               const y = k % 2 ? 1.55 : 1.15;
-              const fr = (yy: number, sh: { rb: number; rt: number; y0: number; y1: number }) => sh.rb + ((sh.rt - sh.rb) * (yy - sh.y0)) / (sh.y1 - sh.y0);
+              const fr = (yy: number, sh: { rb: number; rt: number; y0: number; y1: number }) =>
+                sh.rb + ((sh.rt - sh.rb) * (yy - sh.y0)) / (sh.y1 - sh.y0);
               const r0 = fr(y, SHIELDS.inner);
               const r1 = fr(y, SHIELDS.outer);
               return (
-                <mesh key={'g' + k} material={m.alu} position={[Math.cos(a) * (r0 + r1) / 2, y, Math.sin(a) * (r0 + r1) / 2]} rotation={[0, -a, Math.PI / 2]}>
+                <mesh
+                  key={'g' + k}
+                  material={m.alu}
+                  position={[(Math.cos(a) * (r0 + r1)) / 2, y, (Math.sin(a) * (r0 + r1)) / 2]}
+                  rotation={[0, -a, Math.PI / 2]}
+                >
                   <cylinderGeometry args={[0.005, 0.005, r1 - r0, 5]} />
                 </mesh>
               );
@@ -563,7 +568,12 @@ export function SpherexSpacecraft({
             {[0, 1, 2].map((k) => {
               const a = (k / 3) * Math.PI * 2;
               return (
-                <mesh key={k} material={m.black} position={[-0.06 + Math.cos(a) * 0.078, 1.205, Math.sin(a) * 0.078]} rotation={[0, -a, Math.PI / 2]}>
+                <mesh
+                  key={k}
+                  material={m.black}
+                  position={[-0.06 + Math.cos(a) * 0.078, 1.205, Math.sin(a) * 0.078]}
+                  rotation={[0, -a, Math.PI / 2]}
+                >
                   <boxGeometry args={[0.004, 0.088, 0.004]} />
                 </mesh>
               );
