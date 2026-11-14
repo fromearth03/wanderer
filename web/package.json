@@ -1,0 +1,41 @@
+{
+  "name": "wanderer-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:mock": "VITE_MOCK=1 vite",
+    "build": "tsc -b && vite build",
+    "build:mock": "tsc -b && VITE_MOCK=1 vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "check:explain": "node scripts/check-explain.mjs",
+    "shots": "node scripts/shots.mjs"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.1.0",
+    "@fontsource/public-sans": "^5.1.0",
+    "@react-three/drei": "9.122.0",
+    "@react-three/fiber": "8.18.0",
+    "@react-three/postprocessing": "2.19.1",
+    "@types/three": "0.170.0",
+    "aladin-lite": "3.8.2",
+    "postprocessing": "6.36.7",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.6",
+    "satellite.js": "6.0.1",
+    "three": "0.170.0",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "4.7.0",
+    "puppeteer-core": "24.43.1",
+    "typescript": "5.9.3",
+    "vite": "6.4.6"
+  }
+}

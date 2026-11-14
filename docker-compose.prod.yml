@@ -1,0 +1,9 @@
+# Production override for the public server (wanderer.stellar-trace.tech).
+# Only HTTPS on 443 is published; Caddy gets and renews the certificate itself.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+services:
+  web:
+    environment:
+      SITE_ADDRESS: "wanderer.stellar-trace.tech"
+    ports: !override
+      - "443:443"

@@ -1,0 +1,52 @@
+# Wanderer: SPHEREx Sky Change Explorer
+#   web      Caddy serving the built Vite app, proxies /api and /ws to the gateway (public)
+#   gateway  Go API: IRSA / JPL / CDS calls, caching, jobs (internal :8080)
+#   science  Python FastAPI pixel work (internal :8091, never public)
+# gateway and science share the cache volume at the SAME path (/data/cache):
+# the gateway passes absolute FITS/PNG paths to science.
+services:
+  web:
+    build: ./web
+    environment:
+      SITE_ADDRESS: "${SITE_ADDRESS:-:80}"
+    ports:
+      - "${WEB_PORT:-8000}:80"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      gateway:
+        condition: service_started
+    restart: unless-stopped
+
+  gateway:
+    build: ./gateway
+    environment:
+      PORT: "8080"
+      CACHE_DIR: /data/cache
+      SCIENCE_URL: http://science:8091
+      CACHE_MAX_MB: "${CACHE_MAX_MB:-4000}"
+      IRSA_CONCURRENCY: "4"
+      WARM_PRESETS: "${WARM_PRESETS:-1}"
+    volumes:
+      - cache:/data/cache
+    depends_on:
+      science:
+        condition: service_healthy
+    restart: unless-stopped
+    expose:
+      - "8080"
+
+  science:
+    build: ./science
+    volumes:
+      - cache:/data/cache
+    restart: unless-stopped
+    expose:
+      - "8091"
+    mem_limit: 1g
+
+volumes:
+  cache:
+  caddy_data:
+  caddy_config:

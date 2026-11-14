@@ -1,0 +1,426 @@
+{
+ "presets": [
+  {
+   "id": "asteroid-holda",
+   "title": "Asteroid 872 Holda on the move",
+   "description": "A main belt asteroid (about magnitude 14.5) drifting through Virgo, close to the celestial equator. SPHEREx photographed this patch of sky twice, 44 hours apart, at almost the same wavelength (1.24 and 1.23 microns).",
+   "look_for": "Blink between the two images: a dot up and left of the centre disappears and a new one appears down and right, about 8 arcminutes away. That is Holda. In the difference image it is a blue dot (where it was) and an orange dot (where it went). A much fainter asteroid, 4979 Otawara (magnitude 17.8), shows as a faint blue dot just below and left of the centre. Turn on the JPL overlay to see where JPL predicts both.",
+   "view": "blink",
+   "ra": 179.8,
+   "dec": 1.101,
+   "collection": "spherex_dr1",
+   "size": 200,
+   "stretch": "asinh",
+   "cmap": "gray",
+   "sub": "zodi",
+   "detector": 2,
+   "epochs": [
+    "2025W21_1B_0345_1_D2.dr1",
+    "2025W21_2C_0020_1_D2.dr1"
+   ],
+   "markers": [
+    {
+     "label": "872 Holda (image A)",
+     "ra": 179.735167,
+     "dec": 1.09075,
+     "mjd": 60815.7782
+    },
+    {
+     "label": "872 Holda (image B)",
+     "ra": 179.86675,
+     "dec": 1.111611,
+     "mjd": 60817.6125
+    },
+    {
+     "label": "4979 Otawara (image A)",
+     "ra": 179.785208,
+     "dec": 1.157944,
+     "mjd": 60815.7782
+    }
+   ],
+   "credits": "Images: NASA/JPL-Caltech/IPAC SPHEREx DR1 via IRSA. Positions: JPL Small-Body Identification API.",
+   "sources": [
+    {
+     "id": "2025W21_1B_0345_1_D2.dr1",
+     "obs_id": "2025W21_1B_0345_1",
+     "det": 2,
+     "band": "SPHEREx-D2",
+     "mjd": 60815.778192,
+     "date": "2025-05-20T18:40:35Z",
+     "exptime": 113.5826,
+     "em_min_um": 1.1033,
+     "em_max_um": 1.6499,
+     "collection": "spherex_dr1",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W21_1B/l2b-v27-2026-199/2/level2_2025W21_1B_0345_1D2_spx_l2b-v27-2026-199.fits"
+    },
+    {
+     "id": "2025W21_2C_0020_1_D2.dr1",
+     "obs_id": "2025W21_2C_0020_1",
+     "det": 2,
+     "band": "SPHEREx-D2",
+     "mjd": 60817.612527,
+     "date": "2025-05-22T14:42:02Z",
+     "exptime": 113.5826,
+     "em_min_um": 1.1033,
+     "em_max_um": 1.6499,
+     "collection": "spherex_dr1",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W21_2C/l2b-v27-2026-199/2/level2_2025W21_2C_0020_1D2_spx_l2b-v27-2026-199.fits"
+    }
+   ]
+  },
+  {
+   "id": "comet-3i-atlas",
+   "title": "Interstellar comet 3I/ATLAS",
+   "description": "3I/ATLAS is only the third object ever seen passing through our Solar System from interstellar space (discovered July 2025). SPHEREx crossed its path many times in August 2025. Each frame here is centred on where JPL Horizons says the comet was at that moment.",
+   "look_for": "The comet stays in the centre while the stars jump around between frames. It glows clearly as a soft fuzzy blob only in the frames taken near 4.2 to 4.3 microns, the colour at which carbon dioxide gas shines. At 3.8 or 4.8 microns it almost vanishes. That is SPHEREx sensing gas boiling off an interstellar comet.",
+   "view": "track",
+   "ra": 252.428173,
+   "dec": -17.46558,
+   "collection": "spherex_dr1",
+   "size": 64,
+   "stretch": "zscale",
+   "cmap": "inferno",
+   "sub": "zodi",
+   "epochs": [],
+   "frames": [
+    {
+     "id": "2025W31_2A_0156_2_D6.dr1",
+     "ra": 252.662152,
+     "dec": -17.490223,
+     "mjd": 60888.3356,
+     "note": "4.79 microns: comet faint"
+    },
+    {
+     "id": "2025W31_2A_0219_3_D5.dr1",
+     "ra": 252.428173,
+     "dec": -17.46558,
+     "mjd": 60888.677,
+     "note": "4.21 microns: carbon dioxide glow, strong"
+    },
+    {
+     "id": "2025W32_2D_0189_3_D5.dr1",
+     "ra": 247.713421,
+     "dec": -16.917396,
+     "mjd": 60895.5374,
+     "note": "4.20 microns: carbon dioxide glow"
+    },
+    {
+     "id": "2025W33_1B_0010_4_D5.dr1",
+     "ra": 245.990566,
+     "dec": -16.692678,
+     "mjd": 60898.0528,
+     "note": "3.85 microns: comet faint"
+    },
+    {
+     "id": "2025W33_1B_0399_2_D5.dr1",
+     "ra": 244.55823,
+     "dec": -16.496008,
+     "mjd": 60900.1556,
+     "note": "4.34 microns: carbon dioxide glow"
+    }
+   ],
+   "track": {
+    "name": "3I",
+    "start": "2025-08-01",
+    "stop": "2025-08-25"
+   },
+   "credits": "Images: NASA/JPL-Caltech/IPAC SPHEREx DR1 via IRSA. Ephemeris: JPL Horizons (C/2025 N1).",
+   "sources": [
+    {
+     "id": "2025W31_2A_0156_2_D6.dr1",
+     "obs_id": "2025W31_2A_0156_2",
+     "det": 6,
+     "band": "SPHEREx-D6",
+     "mjd": 60888.335598,
+     "date": "2025-08-01T08:03:15Z",
+     "exptime": 113.5826,
+     "em_min_um": 4.4115,
+     "em_max_um": 5.0096,
+     "collection": "spherex_dr1",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W31_2A/l2b-v27-2026-225/6/level2_2025W31_2A_0156_2D6_spx_l2b-v27-2026-225.fits"
+    },
+    {
+     "id": "2025W31_2A_0219_3_D5.dr1",
+     "obs_id": "2025W31_2A_0219_3",
+     "det": 5,
+     "band": "SPHEREx-D5",
+     "mjd": 60888.676969,
+     "date": "2025-08-01T16:14:50Z",
+     "exptime": 113.5826,
+     "em_min_um": 3.8113,
+     "em_max_um": 4.43,
+     "collection": "spherex_dr1",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W31_2A/l2b-v27-2026-225/5/level2_2025W31_2A_0219_3D5_spx_l2b-v27-2026-225.fits"
+    },
+    {
+     "id": "2025W32_2D_0189_3_D5.dr1",
+     "obs_id": "2025W32_2D_0189_3",
+     "det": 5,
+     "band": "SPHEREx-D5",
+     "mjd": 60895.537415,
+     "date": "2025-08-08T12:53:52Z",
+     "exptime": 113.5826,
+     "em_min_um": 3.8113,
+     "em_max_um": 4.43,
+     "collection": "spherex_dr1",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W32_2D/l2b-v27-2026-226/5/level2_2025W32_2D_0189_3D5_spx_l2b-v27-2026-226.fits"
+    },
+    {
+     "id": "2025W33_1B_0010_4_D5.dr1",
+     "obs_id": "2025W33_1B_0010_4",
+     "det": 5,
+     "band": "SPHEREx-D5",
+     "mjd": 60898.052841,
+     "date": "2025-08-11T01:16:05Z",
+     "exptime": 113.5826,
+     "em_min_um": 3.8113,
+     "em_max_um": 4.43,
+     "collection": "spherex_dr1",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W33_1B/l2b-v27-2026-227/5/level2_2025W33_1B_0010_4D5_spx_l2b-v27-2026-227.fits"
+    },
+    {
+     "id": "2025W33_1B_0399_2_D5.dr1",
+     "obs_id": "2025W33_1B_0399_2",
+     "det": 5,
+     "band": "SPHEREx-D5",
+     "mjd": 60900.155624,
+     "date": "2025-08-13T03:44:05Z",
+     "exptime": 113.5826,
+     "em_min_um": 3.8113,
+     "em_max_um": 4.43,
+     "collection": "spherex_dr1",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W33_1B/l2b-v27-2026-227/5/level2_2025W33_1B_0399_2D5_spx_l2b-v27-2026-227.fits"
+    }
+   ]
+  },
+  {
+   "id": "nep-deep-field",
+   "title": "North ecliptic pole deep field",
+   "description": "SPHEREx flies over the Earth's poles, so on every orbit it looks at the same two spots near the ecliptic poles. This patch near the north ecliptic pole has been photographed about 20000 times in DR1. These nine visits, from May 2025 to January 2026, were all taken at nearly the same colour (0.88 to 0.92 microns).",
+   "look_for": "Flip through the frames: the stars and the small oval galaxy up and right of the centre stay put, because they are fixed in the sky. The black edges move because SPHEREx was turned to a different angle on each visit (the app lines the frames up for you). Anything that appears in only one frame, like a short streak, is a satellite or a cosmic ray hit.",
+   "view": "flipbook",
+   "ra": 270.2,
+   "dec": 66.6,
+   "collection": "spherex_dr1_deep",
+   "size": 200,
+   "stretch": "asinh",
+   "cmap": "gray",
+   "sub": "zodi",
+   "detector": 1,
+   "epochs": [
+    "2025W21_1B_0256_1_D1.deep",
+    "2025W22_2B_0152_1_D1.deep",
+    "2025W24_1A_0051_4_D1.deep",
+    "2025W26_2A_0399_4_D1.deep",
+    "2025W34_2B_0503_3_D1.deep",
+    "2025W35_2A_0622_4_D1.deep",
+    "2025W37_1A_0409_4_D1.deep",
+    "2025W42_1A_0590_4_D1.deep",
+    "2026W04_2A_0045_3_D1.deep"
+   ],
+   "credits": "Images: NASA/JPL-Caltech/IPAC SPHEREx DR1 deep fields via IRSA.",
+   "sources": [
+    {
+     "id": "2025W21_1B_0256_1_D1.deep",
+     "obs_id": "2025W21_1B_0256_1",
+     "det": 1,
+     "band": "SPHEREx-D1",
+     "mjd": 60815.287472,
+     "date": "2025-05-20T06:53:57Z",
+     "exptime": 113.5826,
+     "em_min_um": 0.7455,
+     "em_max_um": 1.1167,
+     "collection": "spherex_dr1_deep",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W21_1B/l2b-v27-2026-199/1/level2_2025W21_1B_0256_1D1_spx_l2b-v27-2026-199.fits"
+    },
+    {
+     "id": "2025W22_2B_0152_1_D1.deep",
+     "obs_id": "2025W22_2B_0152_1",
+     "det": 1,
+     "band": "SPHEREx-D1",
+     "mjd": 60825.341973,
+     "date": "2025-05-30T08:12:26Z",
+     "exptime": 113.5826,
+     "em_min_um": 0.7455,
+     "em_max_um": 1.1167,
+     "collection": "spherex_dr1_deep",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W22_2B/l2b-v27-2026-200/1/level2_2025W22_2B_0152_1D1_spx_l2b-v27-2026-200.fits"
+    },
+    {
+     "id": "2025W24_1A_0051_4_D1.deep",
+     "obs_id": "2025W24_1A_0051_4",
+     "det": 1,
+     "band": "SPHEREx-D1",
+     "mjd": 60835.196442,
+     "date": "2025-06-09T04:42:52Z",
+     "exptime": 113.5826,
+     "em_min_um": 0.7455,
+     "em_max_um": 1.1167,
+     "collection": "spherex_dr1_deep",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W24_1A/l2b-v27-2026-201/1/level2_2025W24_1A_0051_4D1_spx_l2b-v27-2026-201.fits"
+    },
+    {
+     "id": "2025W26_2A_0399_4_D1.deep",
+     "obs_id": "2025W26_2A_0399_4",
+     "det": 1,
+     "band": "SPHEREx-D1",
+     "mjd": 60854.423915,
+     "date": "2025-06-28T10:10:26Z",
+     "exptime": 113.5826,
+     "em_min_um": 0.7455,
+     "em_max_um": 1.1167,
+     "collection": "spherex_dr1_deep",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W26_2A/l2b-v27-2026-214/1/level2_2025W26_2A_0399_4D1_spx_l2b-v27-2026-214.fits"
+    },
+    {
+     "id": "2025W34_2B_0503_3_D1.deep",
+     "obs_id": "2025W34_2B_0503_3",
+     "det": 1,
+     "band": "SPHEREx-D1",
+     "mjd": 60911.213463,
+     "date": "2025-08-24T05:07:23Z",
+     "exptime": 113.5826,
+     "em_min_um": 0.7455,
+     "em_max_um": 1.1167,
+     "collection": "spherex_dr1_deep",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/1/level2_2025W34_2B_0503_3D1_spx_l2b-v27-2026-229.fits"
+    },
+    {
+     "id": "2025W35_2A_0622_4_D1.deep",
+     "obs_id": "2025W35_2A_0622_4",
+     "det": 1,
+     "band": "SPHEREx-D1",
+     "mjd": 60918.685786,
+     "date": "2025-08-31T16:27:31Z",
+     "exptime": 113.5826,
+     "em_min_um": 0.7455,
+     "em_max_um": 1.1167,
+     "collection": "spherex_dr1_deep",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_2A/l2b-v27-2026-231/1/level2_2025W35_2A_0622_4D1_spx_l2b-v27-2026-231.fits"
+    },
+    {
+     "id": "2025W37_1A_0409_4_D1.deep",
+     "obs_id": "2025W37_1A_0409_4",
+     "det": 1,
+     "band": "SPHEREx-D1",
+     "mjd": 60928.064553,
+     "date": "2025-09-10T01:32:57Z",
+     "exptime": 113.5826,
+     "em_min_um": 0.7455,
+     "em_max_um": 1.1167,
+     "collection": "spherex_dr1_deep",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W37_1A/l2b-v27-2026-235/1/level2_2025W37_1A_0409_4D1_spx_l2b-v27-2026-235.fits"
+    },
+    {
+     "id": "2025W42_1A_0590_4_D1.deep",
+     "obs_id": "2025W42_1A_0590_4",
+     "det": 1,
+     "band": "SPHEREx-D1",
+     "mjd": 60963.309427,
+     "date": "2025-10-15T07:25:34Z",
+     "exptime": 113.5826,
+     "em_min_um": 0.7455,
+     "em_max_um": 1.1167,
+     "collection": "spherex_dr1_deep",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W42_1A/l2b-v27-2026-243/1/level2_2025W42_1A_0590_4D1_spx_l2b-v27-2026-243.fits"
+    },
+    {
+     "id": "2026W04_2A_0045_3_D1.deep",
+     "obs_id": "2026W04_2A_0045_3",
+     "det": 1,
+     "band": "SPHEREx-D1",
+     "mjd": 61062.721259,
+     "date": "2026-01-22T17:18:36Z",
+     "exptime": 113.5826,
+     "em_min_um": 0.7455,
+     "em_max_um": 1.1167,
+     "collection": "spherex_dr1_deep",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W04_2A/l2b-v27-2026-218/1/level2_2026W04_2A_0045_3D1_spx_l2b-v27-2026-218.fits"
+    }
+   ]
+  },
+  {
+   "id": "barnards-star",
+   "title": "Barnard's Star, the fastest star",
+   "description": "Barnard's Star is a small red dwarf only 6 light years away. It crosses the sky faster than any other star, about 10.4 arcseconds per year. SPHEREx saw it in August 2025 and again in May 2026.",
+   "look_for": "In nine months it moved about 7.4 arcseconds north, a little more than one SPHEREx pixel (6.15 arcseconds), so zoom in and blink: the star hops by about one pixel. The difference image shows the tell-tale pair of a blue half (old position) next to an orange half (new position). The very centre is black because the star is so bright it saturates the detector.",
+   "view": "blink",
+   "ra": 269.446324,
+   "dec": 4.767485,
+   "collection": "spherex_dr1",
+   "size": 200,
+   "stretch": "log",
+   "cmap": "gray",
+   "sub": "zodi",
+   "detector": 6,
+   "epochs": [
+    "2025W33_2C_0321_1_D6.dr1",
+    "2026W19_1A_0046_1_D6.dr1"
+   ],
+   "markers": [
+    {
+     "label": "Barnard's Star, measured Aug 2025",
+     "ra": 269.446059,
+     "dec": 4.767138,
+     "mjd": 60902.8654
+    },
+    {
+     "label": "Barnard's Star, measured May 2026",
+     "ra": 269.44622,
+     "dec": 4.769276,
+     "mjd": 61164.1338
+    }
+   ],
+   "credits": "Images: NASA/JPL-Caltech/IPAC SPHEREx DR1 via IRSA. Position and proper motion: SIMBAD via CDS Sesame.",
+   "sources": [
+    {
+     "id": "2025W33_2C_0321_1_D6.dr1",
+     "obs_id": "2025W33_2C_0321_1",
+     "det": 6,
+     "band": "SPHEREx-D6",
+     "mjd": 60902.865381,
+     "date": "2025-08-15T20:46:08Z",
+     "exptime": 113.5826,
+     "em_min_um": 4.4115,
+     "em_max_um": 5.0096,
+     "collection": "spherex_dr1",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W33_2C/l2b-v27-2026-228/6/level2_2025W33_2C_0321_1D6_spx_l2b-v27-2026-228.fits"
+    },
+    {
+     "id": "2026W19_1A_0046_1_D6.dr1",
+     "obs_id": "2026W19_1A_0046_1",
+     "det": 6,
+     "band": "SPHEREx-D6",
+     "mjd": 61164.1338,
+     "date": "2026-05-04T03:12:40Z",
+     "exptime": 113.5826,
+     "em_min_um": 4.4115,
+     "em_max_um": 5.0096,
+     "collection": "spherex_dr1",
+     "url": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W19_1A/l2b-v27-2026-245/6/level2_2026W19_1A_0046_1D6_spx_l2b-v27-2026-245.fits"
+    }
+   ]
+  },
+  {
+   "id": "cats-eye-spectrum",
+   "title": "Cat's Eye Nebula: a spectrum from many visits",
+   "description": "NGC 6543, the Cat's Eye, is the glowing gas shell thrown off by a dying star. It sits inside the SPHEREx deep field near the north ecliptic pole, which SPHEREx observes thousands of times. Every visit lands on a slightly different wavelength, so adding the visits up builds a spectrum from 0.75 to 5 microns.",
+   "look_for": "The spectrum is fairly flat with one big spike near 1.85 microns. That spike is hydrogen gas glowing (the Paschen alpha line), the same kind of light that makes nebulae shine red in visible photos.",
+   "view": "spectrum",
+   "ra": 269.639183,
+   "dec": 66.632986,
+   "collection": "spherex_dr1_deep",
+   "size": 64,
+   "stretch": "asinh",
+   "cmap": "nebula",
+   "sub": "zodi",
+   "epochs": [],
+   "spectrum": {
+    "max": 60,
+    "r": 12
+   },
+   "credits": "Images: NASA/JPL-Caltech/IPAC SPHEREx DR1 deep fields via IRSA. Name: SIMBAD via CDS Sesame.",
+   "sources": []
+  }
+ ]
+}

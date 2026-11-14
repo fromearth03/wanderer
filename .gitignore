@@ -1,0 +1,28 @@
+# caches and data
+.cache/
+*.fits
+!gateway/testdata/*.fits
+
+# python
+.venv/
+__pycache__/
+*.pyc
+
+# node / web
+node_modules/
+dist/
+
+# binaries
+gateway/bin/
+gateway/gateway
+*.exe
+
+# editors / os
+.idea/
+.vscode/
+.DS_Store
+
+# internal planning notes (not published)
+CONTRACT.md
+DESIGN-V2.md
+*.tgz
