@@ -19,21 +19,21 @@ const EXAMPLES = [
     text: 'Two real SPHEREx images subtracted. Blue is where the asteroid was, orange is where it went.',
   },
   {
-    to: '/track?name=3I%2FATLAS',
+    to: '/track?name=3I%2FATLAS&start=2025-08-01&stop=2025-08-25',
     img: '/img/spherex-orbit.jpg',
     kind: 'Interstellar comet',
     title: '3I/ATLAS, a visitor from another star',
-    text: 'Wanderer follows it through 60 SPHEREx images and shows its path through the Solar System in 3D.',
+    text: 'SPHEREx caught it in August 2025. Wanderer follows it image by image and shows its path past the Sun in 3D.',
   },
   {
-    to: '/compare?ra=83.822&dec=-5.391&coll=spherex_dr1&mode=colour',
-    img: '/api/rgb.png?ra=83.822&dec=-5.391&size=200&collection=spherex_dr1',
+    to: '/compare?ra=83.822&dec=-5.391&coll=spherex_dr1&mode=rgb',
+    img: '/img/orion-spherex.jpg',
     kind: 'Infrared colour',
     title: 'The Orion Nebula in SPHEREx colours',
     text: 'Three SPHEREx detectors from 1 to 5 microns combined into one false colour picture.',
   },
   {
-    to: "/spectrum?ra=269.639183&dec=66.632986&coll=spherex_dr1_deep&name=Cat%27s%20Eye%20Nebula",
+    to: "/spectrum?ra=269.639183&dec=66.632986&coll=spherex_dr1_deep&name=Cat%27s%20Eye%20Nebula&auto=1",
     img: '/img/spherex-dust-cloud.jpg',
     kind: 'Spectrum',
     title: 'A rainbow built from many visits',
@@ -96,14 +96,27 @@ function Fallback({ h }: { h: number | string }) {
   return <div className="home-3d-wait" style={{ height: h }} />;
 }
 
+function useNarrow(px = 760) {
+  const q = `(max-width: ${px}px)`;
+  const [n, setN] = useState(() => typeof window !== 'undefined' && window.matchMedia(q).matches);
+  useEffect(() => {
+    const m = window.matchMedia(q);
+    const on = () => setN(m.matches);
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, [q]);
+  return n;
+}
+
 export default function Home() {
   const [probe, setProbe] = useState(false);
+  const narrow = useNarrow();
   return (
     <div className="home">
       <section className={`home-hero${probe ? ' is-probe' : ''}`}>
         <div className="home-hero-3d">
           <Suspense fallback={<Fallback h="100%" />}>
-            <SpherexNow height="100%" showControls={false} showReadout interactive wheelZoom="modifier" frameX={0.22} onFocusChange={setProbe} />
+            <SpherexNow height="100%" showControls={false} showReadout={!narrow || probe} interactive wheelZoom="modifier" frameX={narrow ? 0 : 0.22} onFocusChange={setProbe} />
           </Suspense>
         </div>
         <div className="home-hero-text">
@@ -140,7 +153,7 @@ export default function Home() {
           <span>Scroll to explore</span>
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
-        <p className="home-hero-note">Live: SPHEREx right now, from its current orbital elements. Drag to look around.</p>
+        <p className="home-hero-note">SPHEREx from its current orbital elements, shown at 60x speed (press Go live for real time). Drag to look around.</p>
       </section>
 
       <section className="home-sec" id="home-examples">

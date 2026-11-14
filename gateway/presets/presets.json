@@ -4,7 +4,7 @@
    "id": "asteroid-holda",
    "title": "Asteroid 872 Holda on the move",
    "description": "A main belt asteroid (about magnitude 14.5) drifting through Virgo, close to the celestial equator. SPHEREx photographed this patch of sky twice, 44 hours apart, at almost the same wavelength (1.24 and 1.23 microns).",
-   "look_for": "Blink between the two images: a dot up and left of the centre disappears and a new one appears down and right, about 8 arcminutes away. That is Holda. In the difference image it is a blue dot (where it was) and an orange dot (where it went). A much fainter asteroid, 4979 Otawara (magnitude 17.8), shows as a faint blue dot just below and left of the centre. Turn on the JPL overlay to see where JPL predicts both.",
+   "look_for": "Blink between the two images: a dot right of and just below the centre disappears and a new one appears up and to the left, about 8 arcminutes away. That is Holda. In the difference image it is a blue dot (where it was) and an orange dot (where it went). A much fainter asteroid, 4979 Otawara (magnitude 17.8), shows as a faint blue dot above and slightly right of the centre. Turn on the JPL overlay to see where JPL predicts both.",
    "view": "blink",
    "ra": 179.8,
    "dec": 1.101,

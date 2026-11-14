@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { normSpectrum, type SpectrumResult } from '../api';
 import { NoTarget } from '../components/NoTarget';
 import { ErrorBox, JobBar, Note, PanelHead, SideHead, Slider, Toggle } from '../components/ui';
@@ -36,6 +36,13 @@ export default function Spectrum() {
     () => (entry?.result !== undefined ? normSpectrum(entry.result) : entry?.partial?.length ? normSpectrum({ points: entry.partial, unit: 'mJy' }) : null),
     [entry?.result, entry?.partial],
   );
+  // Links from showcase cards carry auto=1: open the (usually already saved) spectrum at once.
+  // The gateway answers instantly when this exact spectrum was built before.
+  const auto = typeof location !== 'undefined' && new URLSearchParams(location.search).get('auto') === '1';
+  useEffect(() => {
+    if (auto && params && !entry) runJob('spectrum', params, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auto, key]);
   if (!has || !params) return <NoTarget title="Spectrum" />;
 
   const run = (force = false) => runJob('spectrum', params, force);

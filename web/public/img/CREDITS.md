@@ -18,3 +18,5 @@ NASA Image Library, so it could not be fetched from this machine.
 # Data credits
 
 - `web/public/data/bsc5.json`: Yale Bright Star Catalogue, 5th revised edition (Hoffleit and Warren 1991), CDS catalogue V/50, file bsc5.dat from tdc-www.harvard.edu/catalogs/bsc5.html. Reduced to RA, Dec (J2000, degrees), V magnitude and B-V colour. Used for the star backdrop.
+
+| orion-spherex.jpg | SPHEREx DR1 images, D1/D3/D6 false colour made by Wanderer (saturated core pixels filled) | Orion Nebula | NASA/JPL-Caltech/IPAC |

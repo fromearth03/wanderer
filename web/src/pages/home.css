@@ -87,3 +87,20 @@ html { scroll-behavior: smooth; }
 .home-hero-text, .home-scroll, .home-hero::after { transition: opacity 0.5s ease; }
 .home-hero.is-probe .home-hero-text, .home-hero.is-probe .home-scroll, .home-hero.is-probe::after { opacity: 0; pointer-events: none; }
 .home-hero.is-probe .home-hero-text * { pointer-events: none !important; }
+
+/* phones: Earth on top, text below it in normal flow, nothing on top of the buttons */
+@media (max-width: 760px) {
+  .home-hero { height: auto; min-height: 0; display: flex; flex-direction: column; }
+  .home-hero-3d { position: relative; inset: auto; height: 58vh; min-height: 340px; }
+  .home-hero::after { display: none; }
+  .home-hero-text { position: relative; left: auto; right: auto; bottom: auto; max-width: none; padding: 22px 16px 28px; pointer-events: auto; }
+  .home-hero h1 { font-size: 36px; }
+  .home-lead { font-size: 15.5px; margin-bottom: 20px; }
+  .home-cta .btn-lg { flex: 1 1 auto; justify-content: center; }
+  .home-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+  .home-facts dt { font-size: 18px; }
+  .home-scroll, .home-hero-note { display: none; }
+  .home-hero.is-probe .home-hero-text { opacity: 1; pointer-events: auto; }
+  .home-sec { padding: 32px 16px; }
+  .home-split-3d .w3-root, .home-wide-3d .w3-root { height: 420px !important; }
+}

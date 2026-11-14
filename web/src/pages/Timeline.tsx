@@ -108,7 +108,7 @@ export default function Timeline() {
   const x = (mjd: number) => m.l + ((mjd - t0) / (t1 - t0)) * (width - m.l - m.r);
   const ly = (w: number) => Math.log(w);
   const y = (w: number) => m.t + (1 - (ly(w) - ly(WAVE_MIN)) / (ly(WAVE_MAX) - ly(WAVE_MIN))) * (H - m.t - m.b);
-  const ticks: number[] = [];
+  const ticksAll: number[] = [];
   {
     const span = t1 - t0;
     const step = span > 150 ? 30 : span > 40 ? 7 : span > 10 ? 2 : 1;
@@ -117,7 +117,7 @@ export default function Timeline() {
     if (step === 30) start.setUTCDate(1);
     let d = start.getTime() / 86400000 + 40587;
     while (d < t1) {
-      if (d > t0) ticks.push(d);
+      if (d > t0) ticksAll.push(d);
       if (step === 30) {
         const dt = new Date((d - 40587) * 86400000);
         dt.setUTCMonth(dt.getUTCMonth() + 1);
@@ -125,6 +125,9 @@ export default function Timeline() {
       } else d += step;
     }
   }
+  // Keep date labels at least 64 px apart so they never overlap on narrow screens.
+  const ticks: number[] = [];
+  for (const t of ticksAll) if (!ticks.length || x(t) - x(ticks[ticks.length - 1]) >= 64) ticks.push(t);
   const visible = shown.filter((e) => e.mjd >= t0 && e.mjd <= t1);
 
   return (

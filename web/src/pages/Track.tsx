@@ -266,7 +266,7 @@ export default function Track() {
                 <div id="track-3d" className="mount-3d" data-mount="track">
                   <PanelHead title="Path around the Sun" />
                   <Suspense fallback={<p className="muted small">Loading the 3D view...</p>}>
-                    <HelioTrack name={saved.name} start={saved.start || undefined} stop={saved.stop || undefined} markTimes={markTimes} height={360} />
+                    <HelioTrack name={saved.name} start={saved.start || undefined} stop={saved.stop || undefined} markTimes={markTimes} height={520} />
                   </Suspense>
                 </div>
               )}
