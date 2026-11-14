@@ -1,0 +1,89 @@
+/* Home page: full-bleed live 3D hero, then real examples and the telescope. */
+.home { min-height: 100%; }
+
+.home-hero { position: relative; height: calc(100vh - var(--hdr-h) - 56px); min-height: 560px; overflow: hidden; border-bottom: 1px solid var(--line); }
+.home-hero-3d { position: absolute; inset: 0; }
+.home-hero-3d > * { height: 100% !important; }
+.home-hero-text {
+  position: absolute; left: clamp(16px, 5vw, 72px); bottom: clamp(56px, 10vh, 110px); max-width: 600px; z-index: 2;
+  pointer-events: none;
+}
+.home-hero-text a, .home-hero-text button { pointer-events: auto; }
+.home-hero::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: linear-gradient(90deg, rgba(3, 6, 14, 0.82) 0%, rgba(3, 6, 14, 0.45) 38%, rgba(3, 6, 14, 0) 62%);
+}
+:root[data-theme='light'] .home-hero::after { background: linear-gradient(90deg, rgba(3, 6, 14, 0.78) 0%, rgba(3, 6, 14, 0.4) 40%, rgba(3, 6, 14, 0) 64%); }
+.home-hero-text, .home-hero-text h1, .home-hero-text .home-lead { color: #eef0f5; }
+.home-eyebrow { font: 500 12px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px; }
+.home-hero h1 { font-size: clamp(38px, 5.4vw, 72px); line-height: 1.02; letter-spacing: -0.03em; font-weight: 800; margin: 0 0 18px; }
+.home-lead { font-size: clamp(15px, 1.3vw, 18px); line-height: 1.55; margin: 0 0 26px; color: #c9ced9 !important; max-width: 540px; }
+.home-cta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 30px; }
+.btn-lg { height: 42px; padding: 0 18px; font-size: 15px; }
+.home-hero .btn:not(.btn-primary) { background: rgba(10, 14, 26, 0.6); border-color: rgba(220, 228, 245, 0.28); color: #eef0f5; }
+.home-facts { display: grid; grid-template-columns: repeat(4, auto); gap: 4px 28px; margin: 0; }
+.home-facts dt { font-size: 20px; color: #fff; }
+.home-facts dd { margin: 0; font-size: 12px; color: #9aa3b5; }
+.home-hero-note { position: absolute; right: 16px; bottom: 12px; margin: 0; font: 400 11px var(--mono); color: #8a93a6; z-index: 2; }
+
+.home-sec { padding: clamp(40px, 7vh, 80px) clamp(16px, 5vw, 72px); border-bottom: 1px solid var(--line); background: var(--panel); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); }
+.home-sec-head { max-width: 760px; margin-bottom: 28px; }
+.home-sec h2 { font-size: clamp(24px, 2.6vw, 34px); letter-spacing: -0.02em; margin: 0 0 10px; }
+.home-sec-head p, .home-split-text p { color: var(--muted); line-height: 1.6; margin: 0 0 14px; font-size: 15px; }
+
+.home-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.home-card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel-solid); color: var(--text); text-decoration: none; overflow: hidden; transition: border-color 0.15s, transform 0.15s; }
+.home-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.home-card-img { aspect-ratio: 4 / 3; background: #000; overflow: hidden; }
+.home-card-img img { width: 100%; height: 100%; object-fit: cover; image-rendering: auto; display: block; }
+.home-card-body { padding: 14px 16px 18px; }
+.home-card-kind { font: 500 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.home-card h3 { font-size: 16px; margin: 6px 0 6px; line-height: 1.3; }
+.home-card p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+
+.home-split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(20px, 4vw, 56px); align-items: center; }
+.home-split-3d, .home-wide-3d { border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: #000; }
+.home-fpa { margin: 6px 0 18px; max-width: 460px; }
+
+.home-3d-wait { background: radial-gradient(ellipse at 60% 50%, #0d1730 0%, #03060e 70%); }
+
+.home-foot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 18px clamp(16px, 5vw, 72px); font-size: 12px; color: var(--muted); background: var(--panel); }
+
+@media (max-width: 1100px) {
+  .home-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-split { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .home-cards { grid-template-columns: 1fr; }
+  .home-facts { grid-template-columns: repeat(2, auto); }
+  .home-hero::after { background: linear-gradient(0deg, rgba(3, 6, 14, 0.9) 0%, rgba(3, 6, 14, 0.5) 55%, rgba(3, 6, 14, 0.1) 100%); }
+  .home-hero-text { bottom: 40px; right: 16px; }
+  .home-hero-note { display: none; }
+}
+
+/* scroll cue: tells first-time visitors there is more below the hero */
+.home-scroll {
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 3;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: none; border: 0; color: #e7e9ef; cursor: pointer; font: 500 11px var(--mono); letter-spacing: 0.16em; text-transform: uppercase;
+  opacity: 0.85;
+}
+.home-scroll:hover { opacity: 1; color: var(--accent); }
+.home-scroll svg { animation: home-bob 1.6s ease-in-out infinite; }
+@keyframes home-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .home-scroll svg { animation: none; } }
+html { scroll-behavior: smooth; }
+
+/* plain wheel scrolls the page; Ctrl/Cmd + wheel zooms the 3D view */
+.scroll-safe { position: relative; }
+.zoom-hint {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 4; pointer-events: none;
+  padding: 10px 16px; border-radius: var(--r); background: rgba(5, 8, 17, 0.82); color: #eef0f5;
+  font: 500 14px var(--font); border: 1px solid rgba(220, 228, 245, 0.2); opacity: 0; transition: opacity 0.25s;
+}
+.zoom-hint.on { opacity: 1; }
+
+/* while the camera is on the spacecraft, the hero text steps aside */
+.home-hero-text, .home-scroll, .home-hero::after { transition: opacity 0.5s ease; }
+.home-hero.is-probe .home-hero-text, .home-hero.is-probe .home-scroll, .home-hero.is-probe::after { opacity: 0; pointer-events: none; }
+.home-hero.is-probe .home-hero-text * { pointer-events: none !important; }

@@ -304,6 +304,9 @@ table.data tbody tr:hover td { background: var(--panel-2); }
 @media (max-width: 760px) { .frames.two { grid-template-columns: minmax(0, 1fr); } }
 .frame { position: relative; aspect-ratio: 1 / 1; background: var(--img-bg); overflow: hidden; border: 1px solid var(--line); touch-action: none; cursor: grab; max-height: 72vh; margin: 0 auto; width: 100%; }
 .frame.single { max-width: 720px; }
+/* Keep a single square frame short enough that its controls stay above the bottom timeline:
+   header + mode bar + controls + time strip take about 330 px. */
+.frame.single { width: min(100%, calc(100vh - 330px)); max-height: none; min-width: 280px; }
 .frame:active { cursor: grabbing; }
 .frame .stage { position: absolute; inset: 0; transform-origin: 0 0; padding: 0; display: block; overflow: visible; }
 .frame img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; user-select: none; -webkit-user-drag: none; pointer-events: none; }
@@ -416,3 +419,6 @@ table.data tbody tr:hover td { background: var(--panel-2); }
 .target-rgb { margin-top: 10px; }
 .target-rgb img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; image-rendering: pixelated; display: block; border: 1px solid var(--line); background: #000; }
 .stage-hero { background: transparent; }
+
+.team { list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 8px; }
+.team li { padding: 8px 0; border-bottom: 1px solid var(--line); }

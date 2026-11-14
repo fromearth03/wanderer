@@ -19,3 +19,7 @@ All images here are in the public domain (NASA). Resized for the web (WebP; 2048
   PIA25784, PIA26531, PIA26537 and PIA26543 (photojournal.jpl.nasa.gov). Not an official NASA image.
 
 Orbit data: SPHEREx elements from CelesTrak (NORAD 63182); planet and comet positions from JPL Horizons.
+
+- `planet-mercury.webp`: NASA/JHUAPL/Carnegie Institution of Washington, MESSENGER MDIS enhanced colour global mosaic (665 m), downsampled to 1024x512 and colour desaturated for a natural look. Source: https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Mercury_MESSENGER_MDIS_Basemap_EnhancedColor_Mosaic_Global_665m.tif (USGS Astrogeology). Public domain.
+- `planet-mars.webp`: NASA/USGS Astrogeology, Viking colour global mosaic (925 m), downsampled to 1024x512. Source: https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Mars_Viking_ClrMosaic_global_925m.tif. Public domain.
+- `planet-jupiter.webp`: NASA/JPL/University of Arizona, Cassini cylindrical map PIA07782, downsampled to 2048x1024. Source: https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia07/pia07782/PIA07782.jpg. Public domain.

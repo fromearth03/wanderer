@@ -1,5 +1,14 @@
 import { ex } from '../explain';
 
+const TEAM = [
+  { name: 'Ali Akbar', role: 'Team lead. Came up with Wanderer and led it end to end: product and design direction, system architecture, the Go gateway and SPHEREx archive pipeline, the science approach, 3D direction, integration, testing and launch.' },
+  { name: 'Hamza Iqbal', role: 'Cloud server and hosting support, Docker setup and HTTPS.' },
+  { name: 'Muhammad Fasih Ul Islam', role: 'Science pipeline support: FITS processing, image alignment and moving object checks.' },
+  { name: 'Muhammad Ammar', role: 'Front end support on the Explore, Timeline and Compare screens.' },
+  { name: 'Taimoor Ashraf', role: '3D support: SPHEREx spacecraft model and the Solar System view.' },
+  { name: 'Muhammad Zeeshan Abbas', role: 'Research on SPHEREx, documentation and the demo.' },
+];
+
 const LINKS = [
   { href: 'https://irsa.ipac.caltech.edu/Missions/spherex.html', label: 'SPHEREx at NASA/IPAC IRSA', what: 'Image archive and cutout service used for every SPHEREx image.' },
   { href: 'https://spherex.caltech.edu/', label: 'SPHEREx mission (Caltech)', what: 'The SPHEREx science team.' },
@@ -25,7 +34,15 @@ export default function About() {
           <p>Wanderer is our answer: a blink comparator, flipbook, difference imager, mover finder, object tracker and spectrum builder for SPHEREx, running on the real public data. "Planet" is Greek for wanderer.</p>
 
           <h2>Team</h2>
-          <p className="muted">Team names and roles go here.</p>
+          <p>Team Wanderer, Pakistan. Six people, one sky.</p>
+          <ul className="team">
+            {TEAM.map((m) => (
+              <li key={m.name}>
+                <b>{m.name}</b>
+                <span className="muted"> {m.role}</span>
+              </li>
+            ))}
+          </ul>
 
           <h2>Data and credits</h2>
           <ul>

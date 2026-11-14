@@ -1,10 +1,11 @@
 // "SPHEREx right now": the real position of the observatory, propagated in the
 // browser (SGP4 via satellite.js) from CelesTrak elements served by the gateway.
-// Earth uses NASA Blue Marble (day) and Black Marble (night), the terminator and
-// ocean glint come from the real Sun direction, the stars are real (Hipparcos).
+// Earth: NASA Blue Marble (day, 4k), Black Marble (night lights), GEBCO relief and
+// ocean mask; terminator, glint and atmosphere follow the real Sun direction.
+// The stars are real (Hipparcos). Click the spacecraft to fly to it.
 // Default export so pages can React.lazy() it.
-import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, PerformanceMonitor, useTexture } from '@react-three/drei';
 import { Bloom, EffectComposer, ToneMapping } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
@@ -12,9 +13,9 @@ import * as THREE from 'three';
 import { eciToGeodetic, gstime, json2satrec, propagate, type OMMJsonObject, type SatRec } from 'satellite.js';
 import { SpherexSpacecraft } from './SpherexSpacecraft';
 import { Starfield } from './Starfield';
-import { StudioEnvironment, ThreeGuard, fmt, useInView, FORCE_HQ } from './support';
+import { FORCE_HQ, StudioEnvironment, ThreeGuard, fmt, useInView } from './support';
 import { usePalette } from './theme';
-import { PerfProbe, useRenderCount } from './perf';
+import { PerfProbe, PERF, useRenderCount } from './perf';
 import './three.css';
 
 export type SpherexNowProps = {
@@ -22,12 +23,20 @@ export type SpherexNowProps = {
   height?: number | string;
   /** Show the latitude / longitude / altitude / speed readout (default true). */
   showReadout?: boolean;
-  /** Show time and camera buttons (default true). */
+  /** Show the time and camera toolbar (default true). Without it a small corner control is shown instead. */
   showControls?: boolean;
-  /** Let the visitor drag and zoom the camera (default true). Use false for a background or hero panel so page scroll is not captured. */
+  /** Let the visitor drag, zoom and click the spacecraft (default true). False: a passive background. */
   interactive?: boolean;
   /** Gateway endpoint for the elements (default /api/spherex/tle). */
   endpoint?: string;
+  /** Shift the Earth sideways in the frame, -0.5..0.5 of the width (positive moves it right). Default 0. */
+  frameX?: number;
+  /** Starting time speed: 1 is live. Default: 1 with the toolbar, 60 without it. */
+  initialRate?: number;
+  /** 'always' (default): the mouse wheel zooms. 'modifier': only Ctrl/Cmd + wheel or pinch zooms, so the page can scroll. */
+  wheelZoom?: 'always' | 'modifier';
+  /** Called when the camera flies to the spacecraft (true) or back to the Earth (false). */
+  onFocusChange?: (focused: boolean) => void;
   className?: string;
 };
 
@@ -54,11 +63,18 @@ const BUILTIN_OMM = {
   MEAN_MOTION_DDOT: 0,
 } as unknown as OMMJsonObject;
 
-const UP_OFFSET = new THREE.Vector3(0, 1.4, 0);
 const RE = 6378.137; // km, scene unit
-const MODEL_SCALE = 0.028; // scene units per metre
+const MODEL_SCALE = 0.05; // scene units per metre: the 2.6 m craft is drawn about 0.13 Earth radii tall
 /** How much larger than life the spacecraft is drawn (scene unit = one Earth radius). */
 const ENLARGEMENT = Math.round((MODEL_SCALE * RE * 1000) / 10000) * 10000;
+const ATMO = 1.025; // atmosphere shell radius
+const EARTH_MIN = 1.7; // closest camera distance to the Earth's centre in the Earth view
+const EARTH_MAX = 14;
+const CRAFT_MIN = 0.22; // camera distance to the craft when focused
+const CRAFT_MAX = 1.4;
+const CAM_FLOOR = 1.08; // the camera never goes below this radius (outside Earth and atmosphere)
+const FLY_MS = 1200;
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
 type Clock = { real0: number; sim0: number; rate: number };
 const simNow = (c: Clock) => c.sim0 + (Date.now() - c.real0) * c.rate;
@@ -103,30 +119,48 @@ const RATES = [
   { rate: 600, label: '600x', explain: 'Speed time up 600 times: one full orbit around Earth (about 98 minutes) takes about 10 seconds.' },
 ];
 
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+
+type Live = 'utc' | 'lat' | 'lon' | 'alt' | 'speed' | 'plat' | 'plon' | 'palt' | 'pspeed';
+
+/** Shared between the page controls and the 3D scene without React renders. */
+type SceneApi = { zoom: (factor: number) => void };
+
 export default function SpherexNow({
   height = 520,
   showReadout = true,
   showControls = true,
   interactive = true,
   endpoint = '/api/spherex/tle',
+  frameX = 0,
+  initialRate,
+  wheelZoom = 'always',
+  onFocusChange,
   className,
 }: SpherexNowProps) {
   useRenderCount('now');
   const [tle, setTle] = useState<TleResp | null>(null);
   const [tleNote, setTleNote] = useState<string>('');
-  const clock = useRef<Clock>({ real0: Date.now(), sim0: Date.now(), rate: 1 });
-  const [rate, setRate] = useState(1);
-  const [follow, setFollow] = useState(false);
-  // the readout is written straight into the DOM 4 times a second: no React renders while it runs
-  const out = useRef<Record<'utc' | 'lat' | 'lon' | 'alt' | 'speed', HTMLElement | null>>({
-    utc: null,
-    lat: null,
-    lon: null,
-    alt: null,
-    speed: null,
-  });
-  // the 2D fallback map only needs a fresh position every few seconds
+  const startRate = initialRate ?? (showControls ? 1 : 60);
+  const clock = useRef<Clock>({ real0: Date.now(), sim0: Date.now(), rate: startRate });
+  const [rate, setRate] = useState(startRate);
+  const [focus, setFocus] = useState(false);
+  useEffect(() => {
+    onFocusChange?.(focus);
+  }, [focus, onFocusChange]);
+  // Esc flies back out to the whole Earth
+  useEffect(() => {
+    if (!focus) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFocus(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [focus]);
+  const out = useRef<Partial<Record<Live, HTMLElement | null>>>({});
   const [slow, setSlow] = useState<State | null>(null);
+  const api = useRef<SceneApi | null>(null);
+  const hint = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let dead = false;
@@ -164,17 +198,30 @@ export default function SpherexNow({
     }
   }, [tle]);
 
+  // live numbers are written straight into the DOM 4 times a second: no React renders
   useEffect(() => {
     if (!sat) return;
     let n = 0;
     const tick = () => {
       const s = sample(sat, simNow(clock.current));
       const o = out.current;
-      if (o.utc) o.utc.textContent = new Date(s.ms).toISOString().slice(0, 19).replace('T', ' ');
-      if (o.lat) o.lat.textContent = s.ok ? `${fmt(Math.abs(s.lat), 2)} ${s.lat >= 0 ? 'N' : 'S'}` : '-';
-      if (o.lon) o.lon.textContent = s.ok ? `${fmt(Math.abs(s.lon), 2)} ${s.lon >= 0 ? 'E' : 'W'}` : '-';
-      if (o.alt) o.alt.textContent = s.ok ? `${fmt(s.alt, 1)} km` : '-';
-      if (o.speed) o.speed.textContent = s.ok ? `${fmt(s.speed, 2)} km/s` : '-';
+      const put = (k: Live, v: string) => {
+        const el = o[k];
+        if (el) el.textContent = v;
+      };
+      const lat = s.ok ? `${fmt(Math.abs(s.lat), 2)} ${s.lat >= 0 ? 'N' : 'S'}` : '-';
+      const lon = s.ok ? `${fmt(Math.abs(s.lon), 2)} ${s.lon >= 0 ? 'E' : 'W'}` : '-';
+      const alt = s.ok ? `${fmt(s.alt, 1)} km` : '-';
+      const spd = s.ok ? `${fmt(s.speed, 2)} km/s` : '-';
+      put('utc', new Date(s.ms).toISOString().slice(0, 19).replace('T', ' '));
+      put('lat', lat);
+      put('lon', lon);
+      put('alt', alt);
+      put('speed', spd);
+      put('plat', lat);
+      put('plon', lon);
+      put('palt', alt);
+      put('pspeed', spd);
       if (n++ % 20 === 0) setSlow(s);
     };
     tick();
@@ -189,21 +236,46 @@ export default function SpherexNow({
     setRate(r);
   };
 
+  const showHint = useCallback(() => {
+    const el = hint.current;
+    if (!el) return;
+    el.classList.add('is-on');
+    window.clearTimeout(Number(el.dataset.t || 0));
+    el.dataset.t = String(window.setTimeout(() => el.classList.remove('is-on'), 1500));
+  }, []);
+
   const live = rate === 1;
   const still = <GroundTrackStill sat={sat} st={slow} />;
-  const bind = (k: keyof typeof out.current) => (el: HTMLElement | null) => {
+  const bind = (k: Live) => (el: HTMLElement | null) => {
     out.current[k] = el;
   };
+  const periodMin = sat ? (2 * Math.PI) / sat.no : NaN;
+  const inclDeg = sat ? (sat.inclo * 180) / Math.PI : NaN;
+  const modifier = wheelZoom === 'modifier';
 
   return (
-    <div className={'w3-root w3-now ' + (className ?? '')} style={{ height }}>
+    <div className={'w3-root w3-now ' + (modifier ? 'w3-wheel-mod ' : '') + (className ?? '')} style={{ height }}>
       <ThreeGuard still={still} label="view of SPHEREx around Earth">
         {sat ? (
-          <NowCanvas sat={sat} clock={clock} follow={follow && interactive} interactive={interactive} />
+          <NowCanvas
+            sat={sat}
+            clock={clock}
+            focus={focus && interactive}
+            interactive={interactive}
+            frameX={frameX}
+            modifier={modifier}
+            api={api}
+            onProbe={() => setFocus(true)}
+            onPlainWheel={showHint}
+          />
         ) : (
           <div className="w3-loading">Loading orbit elements</div>
         )}
       </ThreeGuard>
+
+      <div className="w3-hint" ref={hint} aria-hidden="true">
+        Hold {isMac ? '⌘' : 'Ctrl'} and scroll to zoom
+      </div>
 
       {showControls ? (
         <div className="w3-toolbar">
@@ -224,20 +296,106 @@ export default function SpherexNow({
             <button
               type="button"
               className="w3-btn"
-              aria-pressed={follow}
-              onClick={() => setFollow((v) => !v)}
-              data-explain="Switch between a view of the whole Earth with the orbit and a close camera that rides along with SPHEREx."
+              aria-pressed={focus}
+              onClick={() => setFocus((v) => !v)}
+              data-explain="Fly the camera to SPHEREx and show its details, or fly back to the whole Earth."
             >
-              {follow ? 'Whole Earth' : 'Ride along'}
+              {focus ? 'Back to Earth' : 'Fly to SPHEREx'}
             </button>
           ) : null}
         </div>
-      ) : null}
+      ) : (
+        <div className="w3-corner">
+          <span className={'w3-badge' + (live ? ' is-live' : '')}>{live ? 'Live' : `${rate}x`}</span>
+          <button
+            type="button"
+            className="w3-btn"
+            onClick={() => setClockRate(live ? 60 : 1)}
+            data-explain={
+              live
+                ? 'Speed time up 60 times so you can watch SPHEREx move around its orbit.'
+                : 'Go back to real time: show where SPHEREx is at this very moment.'
+            }
+          >
+            {live ? 'Speed up' : 'Go live'}
+          </button>
+          {interactive ? (
+            <>
+              <button
+                type="button"
+                className="w3-btn w3-btn-sq"
+                onClick={() => api.current?.zoom(0.8)}
+                data-explain="Zoom in."
+                aria-label="Zoom in"
+              >
+                +
+              </button>
+              <button
+                type="button"
+                className="w3-btn w3-btn-sq"
+                onClick={() => api.current?.zoom(1.25)}
+                data-explain="Zoom out."
+                aria-label="Zoom out"
+              >
+                -
+              </button>
+              <button
+                type="button"
+                className={'w3-btn' + (focus ? ' w3-btn-strong' : '')}
+                onClick={() => setFocus((v) => !v)}
+                data-explain={
+                  focus
+                    ? 'Fly the camera back out to the whole Earth. The Esc key does the same.'
+                    : 'Fly the camera to SPHEREx and show its details. You can also click the spacecraft itself.'
+                }
+              >
+                {focus ? 'Back to Earth' : 'Fly to SPHEREx'}
+              </button>
+            </>
+          ) : null}
+        </div>
+      )}
 
-      {showReadout ? (
+      {focus && interactive ? (
+        <div className="w3-readout w3-probe" aria-live="off">
+          <div className="w3-readout-head">
+            <span>SPHEREx</span>
+            <span className={'w3-dot' + (live ? ' is-live' : '')} />
+          </div>
+          <dl>
+            <dt>Latitude</dt>
+            <dd ref={bind('plat')}>-</dd>
+            <dt>Longitude</dt>
+            <dd ref={bind('plon')}>-</dd>
+            <dt>Altitude</dt>
+            <dd ref={bind('palt')}>-</dd>
+            <dt>Speed</dt>
+            <dd ref={bind('pspeed')}>-</dd>
+            <dt>Orbit period</dt>
+            <dd>{fmt(periodMin, 1)} min</dd>
+            <dt>Inclination</dt>
+            <dd>{fmt(inclDeg, 2)} deg</dd>
+          </dl>
+          <ul className="w3-facts">
+            <li>Launched 11 March 2025 on a SpaceX Falcon 9 from Vandenberg, California, together with NASA's PUNCH mission.</li>
+            <li>Telescope aperture 20 cm. Size 2.6 m tall, 3.2 m across the outer shield.</li>
+            <li>102 colour bands from 0.75 to 5.0 micrometres.</li>
+            <li>Maps the whole sky every 6 months.</li>
+          </ul>
+          <div className="w3-readout-foot">Sources: NASA/JPL. Orbit numbers from the current CelesTrak elements.</div>
+          <button
+            type="button"
+            className="w3-btn"
+            onClick={() => setFocus(false)}
+            data-explain="Fly the camera back out to the view of the whole Earth."
+          >
+            Back to Earth
+          </button>
+        </div>
+      ) : showReadout ? (
         <div className="w3-readout" aria-live="off">
           <div className="w3-readout-head">
-            <span>SPHEREx {live ? 'right now' : 'simulated'}</span>
+            <span>SPHEREx {live ? 'right now' : `at ${rate}x speed`}</span>
             <span className={'w3-dot' + (live ? ' is-live' : '')} />
           </div>
           <dl>
@@ -255,7 +413,7 @@ export default function SpherexNow({
           <div className="w3-readout-foot">
             Polar orbit, NORAD 63182. Elements: {tle ? `${tle.source}, epoch ${tle.epoch.slice(0, 16).replace('T', ' ')} UTC` : 'loading'}
             {tleNote ? `, ${tleNote}` : ''}. Spacecraft drawn about {ENLARGEMENT.toLocaleString('en-US')} times true size so it can be seen;
-            Earth, orbit and Sun direction are to scale.
+            Earth, orbit and Sun direction are to scale.{interactive ? ' Click the spacecraft for details.' : ''}
           </div>
         </div>
       ) : null}
@@ -267,40 +425,42 @@ export default function SpherexNow({
 // 3D scene
 // ---------------------------------------------------------------------------
 
-function NowCanvas({
-  sat,
-  clock,
-  follow,
-  interactive,
-}: {
+type CanvasProps = {
   sat: SatRec;
   clock: MutableRefObject<Clock>;
-  follow: boolean;
+  focus: boolean;
   interactive: boolean;
-}) {
+  frameX: number;
+  modifier: boolean;
+  api: MutableRefObject<SceneApi | null>;
+  onProbe: () => void;
+  onPlainWheel: () => void;
+};
+
+function NowCanvas(props: CanvasProps) {
   const box = useRef<HTMLDivElement>(null);
   const inView = useInView(box);
   const [low, setLow] = useState(false);
   return (
-    <div ref={box} className="w3-stage" style={interactive ? undefined : { pointerEvents: 'none' }}>
+    <div ref={box} className="w3-stage" style={props.interactive ? undefined : { pointerEvents: 'none' }}>
       <Canvas
         frameloop={inView ? 'always' : 'never'}
         dpr={low ? 1 : [1, 1.5]}
-        camera={{ position: [0, 1.2, 4], fov: 35, near: 0.005, far: 500 }}
+        camera={{ position: [0, 1.4, 5], fov: 35, near: 0.05, far: 500 }}
         gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
       >
-        <PerformanceMonitor onDecline={() => setLow(!FORCE_HQ)} onIncline={() => setLow(false)} flipflops={3} />
+        {/* quality only ever steps down once per session: no flipping, no remounts, no black frames */}
+        <PerformanceMonitor onDecline={() => !FORCE_HQ && setLow(true)} flipflops={1} />
         <color attach="background" args={['#020306']} />
         <Suspense fallback={null}>
           <PerfProbe name="now" />
-          <NowScene sat={sat} clock={clock} follow={follow} interactive={interactive} />
+          <NowScene {...props} />
         </Suspense>
-        {low ? null : (
-          <EffectComposer multisampling={2} enableNormalPass={false}>
-            <Bloom mipmapBlur luminanceThreshold={12} luminanceSmoothing={0.3} intensity={0.45} radius={0.6} />
-            <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-          </EffectComposer>
-        )}
+        <EffectComposer multisampling={0} enableNormalPass={false}>
+          {/* only the Sun disc (HDR value ~90) is above this threshold */}
+          <Bloom mipmapBlur luminanceThreshold={20} luminanceSmoothing={0.1} intensity={low ? 0 : 0.5} radius={0.6} />
+          <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+        </EffectComposer>
       </Canvas>
     </div>
   );
@@ -318,12 +478,13 @@ void main() {
   gl_Position = projectionMatrix * viewMatrix * w;
 }`;
 
-// Linear-light shading: day side lit by the Sun, city lights only where it is
-// night, a sun glint on water (ocean mask), and a thin blue limb haze.
+// Linear-light shading. Land relief from a GEBCO normal map; a small, subtle sun
+// glint only on water (GEBCO ocean mask); city lights only on the night side.
 const earthFrag = /* glsl */ `
 uniform sampler2D dayMap;
 uniform sampler2D nightMap;
 uniform sampler2D oceanMap;
+uniform sampler2D normalMap;
 uniform vec3 sunDir;
 varying vec2 vUv;
 varying vec3 vN;
@@ -332,27 +493,32 @@ void main() {
   vec3 N = normalize(vN);
   vec3 L = normalize(sunDir);
   vec3 V = normalize(cameraPosition - vW);
+  float ocean = texture2D(oceanMap, vUv).r;
+  // tangent frame on the sphere: east and north (the Earth spins about +Y)
+  vec3 T = normalize(cross(vec3(0.0, 1.0, 0.0), N) + vec3(1e-5, 0.0, 0.0));
+  vec3 B = cross(N, T);
+  vec3 nm = texture2D(normalMap, vUv).xyz * 2.0 - 1.0;
+  vec3 Nl = normalize(mix(N, normalize(T * nm.x + B * nm.y + N * nm.z), 1.0 - ocean));
   float d = dot(N, L);
-  float dayK = smoothstep(-0.12, 0.18, d);
+  float dl = dot(Nl, L);
+  float dayK = smoothstep(-0.10, 0.22, d);
   vec3 day = texture2D(dayMap, vUv).rgb;
   vec3 night = texture2D(nightMap, vUv).rgb;
-  float ocean = texture2D(oceanMap, vUv).r;
-  vec3 col = day * (0.02 + 1.35 * max(d, 0.0));
-  // ocean glint (Blinn-Phong), only on water and only in daylight
+  vec3 col = day * (0.015 + 1.25 * max(dl, 0.0));
+  // ocean glint: narrow and faint, never above the bloom threshold
   vec3 H = normalize(L + V);
-  float spec = pow(max(dot(N, H), 0.0), 90.0) * ocean * smoothstep(0.0, 0.2, d);
-  col += vec3(1.0, 0.95, 0.85) * spec * 14.0;
-  // limb haze on the day side
-  float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
-  col += vec3(0.18, 0.35, 0.8) * fres * smoothstep(-0.15, 0.4, d) * 0.6;
-  // city lights only on the night side, fading through twilight
-  vec3 lights = pow(night, vec3(1.4)) * 1.6 * (1.0 - smoothstep(-0.18, 0.05, d));
+  float nh = max(dot(N, H), 0.0);
+  float spec = (pow(nh, 1800.0) * 0.16 + pow(nh, 160.0) * 0.012) * ocean * smoothstep(0.0, 0.25, d);
+  col += vec3(0.95, 0.92, 0.85) * spec;
+  // warm tint along the terminator
+  col *= mix(vec3(1.0), vec3(1.08, 0.86, 0.7), exp(-pow(d / 0.12, 2.0)) * 0.6);
+  vec3 lights = pow(night, vec3(1.5)) * 1.4 * (1.0 - smoothstep(-0.16, 0.06, d));
   gl_FragColor = vec4(mix(lights, col, dayK), 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
 
-// Thin Fresnel shell: blue scattering seen at the day limb.
+// Thin atmosphere shell: Rayleigh-blue on the day limb, reddened near the terminator.
 const atmoFrag = /* glsl */ `
 uniform vec3 sunDir;
 varying vec3 vN;
@@ -360,40 +526,51 @@ varying vec3 vW;
 void main() {
   vec3 N = normalize(vN);
   vec3 V = normalize(cameraPosition - vW);
-  float rim = pow(1.0 - abs(dot(N, V)), 4.0);
-  float lit = smoothstep(-0.25, 0.35, dot(N, normalize(sunDir)));
-  vec3 c = vec3(0.25, 0.5, 1.0) * rim * lit * 1.3;
-  gl_FragColor = vec4(c, 1.0);
+  float mu = dot(N, normalize(sunDir));
+  float rim = pow(1.0 - abs(dot(N, V)), 2.6);
+  float lit = smoothstep(-0.28, 0.45, mu);
+  vec3 blue = vec3(0.24, 0.48, 1.0) * lit;
+  vec3 dusk = vec3(1.0, 0.5, 0.25) * exp(-pow(mu / 0.12, 2.0)) * 0.22 * lit;
+  gl_FragColor = vec4((blue + dusk) * rim * 0.9, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
 
-/** Low-res textures first (fast suspense), the 2k ones swapped in when loaded. */
+let flatNormal: THREE.DataTexture | null = null;
+const flat = () => {
+  if (!flatNormal) {
+    flatNormal = new THREE.DataTexture(new Uint8Array([128, 128, 255, 255]), 1, 1);
+    flatNormal.needsUpdate = true;
+  }
+  return flatNormal;
+};
+
+/** Low-res textures first (fast suspense), the 4k day map, night lights and relief swapped in when loaded. */
 function useEarthTextures() {
   const [dayLo, nightLo, ocean] = useTexture([
     '/textures/earth-day-512.webp',
     '/textures/earth-night-512.webp',
     '/textures/earth-ocean-1k.webp',
   ]);
-  const [hi, setHi] = useState<[THREE.Texture, THREE.Texture] | null>(null);
+  const [hi, setHi] = useState<{ day?: THREE.Texture; night?: THREE.Texture; normal?: THREE.Texture }>({});
   const gl = useThree((s) => s.gl);
   useEffect(() => {
     let dead = false;
     const loader = new THREE.TextureLoader();
-    Promise.all([loader.loadAsync('/textures/earth-day-2k.webp'), loader.loadAsync('/textures/earth-night-2k.webp')])
-      .then(([d, n]) => {
-        if (dead) {
-          d.dispose();
-          n.dispose();
-          return;
-        }
-        for (const t of [d, n]) {
-          t.colorSpace = THREE.SRGBColorSpace;
-          t.anisotropy = Math.min(4, gl.capabilities.getMaxAnisotropy());
-        }
-        setHi([d, n]);
-      })
-      .catch(() => undefined);
+    const aniso = Math.min(8, gl.capabilities.getMaxAnisotropy());
+    const load = (url: string, key: 'day' | 'night' | 'normal', srgb: boolean) =>
+      loader
+        .loadAsync(url)
+        .then((t) => {
+          if (dead) return t.dispose();
+          t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+          t.anisotropy = aniso;
+          setHi((h) => ({ ...h, [key]: t }));
+        })
+        .catch(() => undefined);
+    load('/textures/earth-day-4k.webp', 'day', true);
+    load('/textures/earth-night-2k.webp', 'night', true);
+    load('/textures/earth-normal-2k.webp', 'normal', false);
     return () => {
       dead = true;
     };
@@ -403,38 +580,53 @@ function useEarthTextures() {
     nightLo.colorSpace = THREE.SRGBColorSpace;
     dayLo.needsUpdate = nightLo.needsUpdate = true;
   }, [dayLo, nightLo]);
-  useEffect(() => () => hi?.forEach((t) => t.dispose()), [hi]);
-  return { day: hi?.[0] ?? dayLo, night: hi?.[1] ?? nightLo, ocean };
+  useEffect(() => () => Object.values(hi).forEach((t) => t?.dispose()), [hi]);
+  return { day: hi.day ?? dayLo, night: hi.night ?? nightLo, normal: hi.normal ?? flat(), ocean };
 }
 
-const TRAIL_N = 200;
+const TRAIL_N = 220;
+const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-function NowScene({
-  sat,
-  clock,
-  follow,
-  interactive,
-}: {
-  sat: SatRec;
-  clock: MutableRefObject<Clock>;
-  follow: boolean;
-  interactive: boolean;
-}) {
+/** Shifts the rendered view sideways (camera view offset, not CSS): the canvas stays full width.
+ *  Eases back to centre while the spacecraft is focused. */
+function FrameOffset({ frameX, focus }: { frameX: number; focus: boolean }) {
+  const { camera, size } = useThree();
+  const cur = useRef(frameX);
+  const applied = useRef<string>('');
+  useFrame((_, dt) => {
+    const want = focus ? 0 : frameX;
+    cur.current += (want - cur.current) * Math.min(1, dt * 3);
+    if (Math.abs(want - cur.current) < 1e-4) cur.current = want;
+    const key = `${cur.current.toFixed(4)}|${size.width}|${size.height}`;
+    if (key === applied.current) return;
+    applied.current = key;
+    const cam = camera as THREE.PerspectiveCamera;
+    if (Math.abs(cur.current) > 1e-4) cam.setViewOffset(size.width, size.height, -cur.current * size.width, 0, size.width, size.height);
+    else cam.clearViewOffset();
+    cam.updateProjectionMatrix();
+  });
+  return null;
+}
+
+function NowScene({ sat, clock, focus, interactive, frameX, modifier, api, onProbe, onPlainWheel }: CanvasProps) {
   useRenderCount('now/scene');
   const pal = usePalette();
-  const { day, night, ocean } = useEarthTextures();
+  const { day, night, ocean, normal } = useEarthTextures();
   const earth = useRef<THREE.Mesh>(null);
   const craft = useRef<THREE.Group>(null);
+  const ring = useRef<THREE.Mesh>(null);
   const sunLight = useRef<THREE.DirectionalLight>(null);
   const sunDisc = useRef<THREE.Mesh>(null);
   const controls = useRef<React.ElementRef<typeof OrbitControls>>(null);
-  const { camera } = useThree();
+  const { camera, gl } = useThree();
+  const [hot, setHot] = useState(false);
 
   const uniforms = useMemo(
     () => ({
-      dayMap: { value: day },
-      nightMap: { value: night },
-      oceanMap: { value: ocean },
+      dayMap: { value: day as THREE.Texture },
+      nightMap: { value: night as THREE.Texture },
+      oceanMap: { value: ocean as THREE.Texture },
+      normalMap: { value: normal as THREE.Texture },
       sunDir: { value: new THREE.Vector3(1, 0, 0) },
     }),
     // textures are swapped below without rebuilding the material
@@ -445,7 +637,8 @@ function NowScene({
     uniforms.dayMap.value = day;
     uniforms.nightMap.value = night;
     uniforms.oceanMap.value = ocean;
-  }, [day, night, ocean, uniforms]);
+    uniforms.normalMap.value = normal;
+  }, [day, night, ocean, normal, uniforms]);
 
   // orbit trail: one and a half orbits of points, brightest just behind the craft
   const trail = useMemo(() => {
@@ -457,26 +650,25 @@ function NowScene({
     line.frustumCulled = false;
     return { g, m, line, times: new Float64Array(TRAIL_N), t0: -Infinity };
   }, []);
-  const nadirGeo = useMemo(() => new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), []);
-  const nadirLine = useMemo(() => new THREE.Line(nadirGeo, new THREE.LineBasicMaterial({ transparent: true, opacity: 0.45 })), [nadirGeo]);
   const accent = useMemo(() => new THREE.Color(pal.accent), [pal.accent]);
-  useEffect(() => {
-    (nadirLine.material as THREE.LineBasicMaterial).color.set(pal.muted);
-  }, [pal, nadirLine]);
   useEffect(
     () => () => {
       trail.g.dispose();
       trail.m.dispose();
-      nadirGeo.dispose();
-      (nadirLine.material as THREE.Material).dispose();
     },
-    [trail, nadirGeo, nadirLine],
+    [trail],
   );
 
   const periodMs = ((2 * Math.PI) / sat.no) * 60000; // sat.no is mean motion in rad/min
-  const prevSat = useRef<THREE.Vector3 | null>(null);
-  const placed = useRef(false);
-  const userMoved = useRef(false);
+  const st = useRef({
+    placed: false,
+    lastUser: -1e9, // last time the visitor touched the camera
+    prevSat: new THREE.Vector3(),
+    hasPrev: false,
+    fly: null as null | { t0: number; fromPos: THREE.Vector3; fromTarget: THREE.Vector3; toCraft: boolean },
+    mode: 'earth' as 'earth' | 'craft',
+    offset: new THREE.Vector3(), // camera offset from the craft in the craft view
+  });
   const tmp = useMemo(
     () => ({
       r: new THREE.Vector3(),
@@ -486,9 +678,91 @@ function NowScene({
       m: new THREE.Matrix4(),
       p: new THREE.Vector3(),
       q: new THREE.Vector3(),
+      a: new THREE.Vector3(),
+      b: new THREE.Vector3(),
+      ray: new THREE.Ray(),
+      sph: new THREE.Sphere(new THREE.Vector3(), ATMO),
     }),
     [],
   );
+
+  /**
+   * The whole-Earth view: a steady vantage on the sunlit side, a little above the equator and turned
+   * 40 degrees toward the terminator so day, night and city lights all show. It follows the Sun, not
+   * the craft, so the default view never chases the spacecraft around its orbit.
+   */
+  const earthView = (sunDir: THREE.Vector3, dist: number, out: THREE.Vector3) => {
+    out.copy(sunDir).normalize().applyAxisAngle(Y_AXIS, -0.7);
+    out.y = out.y * 0.5 + 0.28;
+    return out.normalize().multiplyScalar(dist);
+  };
+  const craftView = (satPos: THREE.Vector3, sun: THREE.Vector3, out: THREE.Vector3) => {
+    const r = tmp.a.copy(satPos).normalize();
+    const side = tmp.b.copy(sun).addScaledVector(r, -sun.dot(r)).normalize();
+    // from the sunlit side, slightly above the craft, looking back across it
+    return out.copy(satPos).addScaledVector(r, 0.22).addScaledVector(side, 0.42);
+  };
+
+  // start a fly-in or fly-out whenever focus changes
+  useEffect(() => {
+    const ctl = controls.current;
+    if (!st.current.placed || !ctl) return;
+    st.current.fly = { t0: performance.now(), fromPos: camera.position.clone(), fromTarget: ctl.target.clone(), toCraft: focus };
+    st.current.mode = 'earth';
+  }, [focus, camera]);
+
+  // zoom API for the + / - buttons, and Ctrl/Cmd + wheel in 'modifier' mode
+  const zoomBy = useCallback(
+    (factor: number) => {
+      const ctl = controls.current;
+      if (!ctl) return;
+      const off = tmp.q.copy(camera.position).sub(ctl.target);
+      const lo = st.current.mode === 'craft' ? CRAFT_MIN : EARTH_MIN;
+      const hi = st.current.mode === 'craft' ? CRAFT_MAX : EARTH_MAX;
+      off.setLength(THREE.MathUtils.clamp(off.length() * factor, lo, hi));
+      camera.position.copy(ctl.target).add(off);
+      if (st.current.mode === 'craft') st.current.offset.copy(off);
+      st.current.lastUser = performance.now();
+      ctl.update();
+    },
+    [camera, tmp],
+  );
+  useEffect(() => {
+    api.current = { zoom: zoomBy };
+    return () => {
+      api.current = null;
+    };
+  }, [api, zoomBy]);
+
+  useEffect(() => {
+    if (!modifier || !interactive) return;
+    const el = gl.domElement;
+    const onWheel = (e: WheelEvent) => {
+      // Close to the craft any wheel zooms (the visitor is clearly interacting); around the Earth only
+      // Ctrl/Cmd + wheel or a trackpad pinch zooms, so a plain wheel scrolls the page.
+      if (e.ctrlKey || e.metaKey || st.current.mode === 'craft') {
+        e.preventDefault(); // also covers trackpad pinch, which arrives as ctrl + wheel
+        zoomBy(Math.exp(e.deltaY * 0.0025));
+      } else onPlainWheel();
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [gl, modifier, interactive, zoomBy, onPlainWheel]);
+
+  // touch: in 'modifier' mode one finger scrolls the page, two fingers rotate and zoom
+  useEffect(() => {
+    const ctl = controls.current;
+    if (!ctl) return;
+    if (modifier) {
+      ctl.touches.ONE = -1 as unknown as THREE.TOUCH;
+      ctl.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
+      gl.domElement.style.touchAction = 'pan-y';
+    }
+  }, [modifier, gl]);
+
+  useEffect(() => {
+    gl.domElement.style.cursor = hot && !focus ? 'pointer' : '';
+  }, [hot, focus, gl]);
 
   useFrame((_, dt) => {
     const ms = simNow(clock.current);
@@ -499,11 +773,23 @@ function NowScene({
     const satPos = toScene(p.x, p.y, p.z, tmp.p);
     const [sx, sy, sz] = sunEci(ms);
     const sun = toScene(sx * RE, sy * RE, sz * RE, tmp.s).normalize();
+    const s = st.current;
+    const ctl = controls.current;
+    const now = performance.now();
 
     uniforms.sunDir.value.copy(sun);
     if (earth.current) earth.current.rotation.y = gstime(d);
-    if (sunLight.current) sunLight.current.position.copy(sun).multiplyScalar(20);
-    if (sunDisc.current) sunDisc.current.position.copy(camera.position).addScaledVector(sun, 300);
+    if (sunLight.current) {
+      sunLight.current.position.copy(satPos).addScaledVector(sun, 10);
+      sunLight.current.target.position.copy(satPos);
+      sunLight.current.target.updateMatrixWorld();
+    }
+    // the Sun disc is hidden whenever the Earth (with its atmosphere) is in front of it
+    if (sunDisc.current) {
+      tmp.ray.set(camera.position, sun);
+      sunDisc.current.visible = !tmp.ray.intersectsSphere(tmp.sph);
+      sunDisc.current.position.copy(camera.position).addScaledVector(sun, 300);
+    }
 
     // attitude: telescope (+Y) away from Earth, solar panel (-X) toward the Sun
     const r = tmp.r.copy(satPos).normalize();
@@ -517,13 +803,14 @@ function NowScene({
       craft.current.position.copy(satPos);
       craft.current.quaternion.setFromRotationMatrix(tmp.m);
     }
+    if (ring.current) {
+      ring.current.position.copy(satPos);
+      ring.current.quaternion.copy(camera.quaternion);
+      const mat = ring.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = s.mode !== 'craft' && hot ? 0.55 : 0;
+    }
 
-    const pos = nadirGeo.attributes.position as THREE.BufferAttribute;
-    pos.setXYZ(0, satPos.x, satPos.y, satPos.z);
-    pos.setXYZ(1, r.x, r.y, r.z);
-    pos.needsUpdate = true;
-
-    // trail positions: recomputed only every quarter orbit; colours every frame
+    // trail positions: recomputed every quarter orbit; colours every frame
     if (ms - trail.t0 > periodMs * 0.25 || ms < trail.t0) {
       trail.t0 = ms;
       const pa = trail.g.attributes.position as THREE.BufferAttribute;
@@ -540,71 +827,90 @@ function NowScene({
     }
     const ca = trail.g.attributes.color as THREE.BufferAttribute;
     for (let i = 0; i < TRAIL_N; i++) {
-      const dtm = (trail.times[i] - ms) / periodMs; // < 0 behind the craft
-      const a = dtm <= 0 ? 0.95 * Math.exp(dtm * 3.2) : 0.12 * Math.exp(-dtm * 2);
+      const f = (trail.times[i] - ms) / periodMs; // < 0 behind the craft
+      const a = f <= 0 ? 0.95 * Math.exp(f * 3.2) : 0.1 * Math.exp(-f * 2);
       ca.setXYZW(i, accent.r, accent.g, accent.b, a);
     }
     ca.needsUpdate = true;
 
-    const ctl = controls.current;
-    if (!placed.current && ctl) {
-      placed.current = true;
-      const dir = satPos.clone().normalize();
-      camera.position.copy(dir.multiplyScalar(5.0).add(UP_OFFSET));
+    if (!ctl) return;
+    if (!s.placed) {
+      s.placed = true;
+      earthView(sun, 5.2, camera.position);
       ctl.target.set(0, 0, 0);
       ctl.update();
     }
-    if (ctl) {
-      if (follow) {
-        if (prevSat.current) camera.position.add(tmp.z.copy(satPos).sub(prevSat.current));
-        ctl.target.copy(satPos);
-      } else {
-        if (ctl.target.lengthSq() > 0) ctl.target.set(0, 0, 0);
-        if (!userMoved.current) {
-          // keep SPHEREx on the visible side of the Earth until the visitor takes the camera
-          const want = tmp.z.copy(satPos).normalize().multiplyScalar(5.0).add(UP_OFFSET);
-          camera.position.lerp(want, Math.min(1, dt * 0.6));
-        }
+    const cam = camera as THREE.PerspectiveCamera;
+
+    if (s.fly) {
+      // eased flight; the end point moves with the craft
+      const k = ease(Math.min(1, (now - s.fly.t0) / FLY_MS));
+      const toPos = s.fly.toCraft ? craftView(satPos, sun, tmp.a) : earthView(sun, 5.2, tmp.a);
+      const toTarget = s.fly.toCraft ? tmp.b.copy(satPos) : tmp.b.set(0, 0, 0);
+      camera.position.lerpVectors(s.fly.fromPos, toPos, k);
+      ctl.target.lerpVectors(s.fly.fromTarget, toTarget, k);
+      cam.near = THREE.MathUtils.lerp(cam.near, s.fly.toCraft ? 0.01 : 0.05, k);
+      cam.updateProjectionMatrix();
+      if (k >= 1) {
+        s.mode = s.fly.toCraft ? 'craft' : 'earth';
+        s.offset.copy(camera.position).sub(satPos);
+        s.fly = null;
+        s.lastUser = now;
       }
-      prevSat.current = (prevSat.current ?? new THREE.Vector3()).copy(satPos);
+    } else if (s.mode === 'craft') {
+      // ride along: keep the visitor's chosen offset while the craft moves
+      if (s.hasPrev) camera.position.add(tmp.q.copy(satPos).sub(s.prevSat));
+      ctl.target.copy(satPos);
+    } else if (now - s.lastUser > 6000) {
+      // idle: ease back to the steady whole-Earth view, keeping the visitor's zoom
+      const dist = camera.position.length();
+      camera.position.lerp(earthView(sun, dist, tmp.a), Math.min(1, dt * 0.15)).setLength(dist);
+    }
+    ctl.minDistance = s.mode === 'craft' ? CRAFT_MIN : s.fly ? 0 : EARTH_MIN;
+    ctl.maxDistance = s.mode === 'craft' ? CRAFT_MAX : s.fly ? Infinity : EARTH_MAX;
+    ctl.enableZoom = interactive && !modifier; // in 'modifier' mode the wheel handler above does all zooming
+    // never inside the Earth or its atmosphere, whatever the controls do
+    if (camera.position.length() < CAM_FLOOR) camera.position.setLength(CAM_FLOOR);
+    s.prevSat.copy(satPos);
+    s.hasPrev = true;
+    if (PERF) {
+      const v = satPos.clone().project(camera);
+      (window as unknown as { __w3probe?: number[] }).__w3probe = [
+        ((v.x + 1) / 2) * gl.domElement.clientWidth,
+        ((1 - v.y) / 2) * gl.domElement.clientHeight,
+      ];
     }
   });
 
-  // move the camera when switching between whole Earth and ride along
-  useEffect(() => {
-    const ctl = controls.current;
-    if (!ctl || !prevSat.current) return;
-    const s = prevSat.current.clone();
-    userMoved.current = false;
-    if (follow) {
-      const r = s.clone().normalize();
-      const side = new THREE.Vector3(0, 1, 0).cross(r).normalize();
-      camera.position.copy(s).addScaledVector(r, 0.16).addScaledVector(side, 0.22);
-      ctl.target.copy(s);
-    } else {
-      camera.position.copy(s.normalize().multiplyScalar(5.0).add(UP_OFFSET));
-      ctl.target.set(0, 0, 0);
-    }
-    ctl.update();
-  }, [follow, camera]);
+  const over = (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation();
+    if (interactive) setHot(true);
+  };
+  const outp = () => setHot(false);
+  const up = (e: ThreeEvent<PointerEvent>) => {
+    if (!interactive || focus || e.delta > 6) return; // a drag is not a click
+    e.stopPropagation();
+    onProbe();
+  };
 
   return (
     <>
+      <FrameOffset frameX={frameX} focus={focus} />
       <Starfield frame="equatorial" brightness={1.5} />
-      <StudioEnvironment intensity={0.12} />
-      <ambientLight intensity={0.03} />
-      <directionalLight ref={sunLight} intensity={3.2} color="#fff6ea" />
-      {/* the Sun: about 0.53 degrees across, bright enough to bloom */}
-      <mesh ref={sunDisc}>
+      <StudioEnvironment intensity={0.35} />
+      <hemisphereLight args={['#9fb6e0', '#0b1020', 0.25]} />
+      <directionalLight ref={sunLight} intensity={3.4} color="#fff6ea" />
+      {/* the Sun: about 0.53 degrees across, bright enough to bloom, hidden behind the Earth */}
+      <mesh ref={sunDisc} renderOrder={-5}>
         <sphereGeometry args={[1.4, 24, 16]} />
         <meshBasicMaterial color={[90, 82, 70]} toneMapped={false} fog={false} />
       </mesh>
       <mesh ref={earth}>
-        <sphereGeometry args={[1, 96, 64]} />
+        <sphereGeometry args={[1, 128, 96]} />
         <shaderMaterial vertexShader={earthVert} fragmentShader={earthFrag} uniforms={uniforms} />
       </mesh>
-      <mesh scale={1.018}>
-        <sphereGeometry args={[1, 64, 48]} />
+      <mesh scale={ATMO}>
+        <sphereGeometry args={[1, 96, 64]} />
         <shaderMaterial
           vertexShader={earthVert}
           fragmentShader={atmoFrag}
@@ -615,11 +921,20 @@ function NowScene({
         />
       </mesh>
       <primitive object={trail.line} />
-      <primitive object={nadirLine} />
-      <group ref={craft}>
+      {/* thin ring around the craft: shows it can be clicked */}
+      <mesh ref={ring}>
+        <ringGeometry args={[0.12, 0.123, 64]} />
+        <meshBasicMaterial color={pal.text} transparent opacity={0} depthWrite={false} />
+      </mesh>
+      <group ref={craft} onPointerOver={over} onPointerOut={outp} onPointerUp={up}>
         <group scale={MODEL_SCALE} position={[0, -1.3 * MODEL_SCALE, 0]}>
           <SpherexSpacecraft accent={pal.accent} detColors={pal.det} lite />
         </group>
+        {/* larger invisible hit target so the small craft is easy to click */}
+        <mesh>
+          <sphereGeometry args={[0.11, 12, 8]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        </mesh>
       </group>
       <OrbitControls
         ref={controls}
@@ -627,9 +942,13 @@ function NowScene({
         enabled={interactive}
         enablePan={false}
         enableDamping
-        minDistance={0.12}
-        maxDistance={12}
-        onStart={() => (userMoved.current = true)}
+        dampingFactor={0.06}
+        rotateSpeed={0.6}
+        zoomSpeed={0.7}
+        minDistance={EARTH_MIN}
+        maxDistance={EARTH_MAX}
+        onStart={() => (st.current.lastUser = performance.now())}
+        onEnd={() => (st.current.lastUser = performance.now())}
       />
     </>
   );

@@ -76,7 +76,7 @@ function ModelView({ showPartList = true, initialExploded = false, initialFocalP
           gl={{ antialias: !low, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
           onPointerMissed={() => setHovered(null)}
         >
-          <PerformanceMonitor onDecline={() => setLow(!FORCE_HQ)} onIncline={() => setLow(false)} flipflops={3} />
+          <PerformanceMonitor onDecline={() => !FORCE_HQ && setLow(true)} flipflops={1} />
           <Suspense fallback={null}>
             <PerfProbe name="model" />
             <SpaceEnvironment />

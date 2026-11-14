@@ -261,15 +261,15 @@ function makeMaterials(lite = false) {
 function liteMaterials(t: SharedTex) {
   const std = (o: THREE.MeshStandardMaterialParameters) => new THREE.MeshStandardMaterial(o);
   return {
-    shield: std({ color: '#d3d5d9', metalness: 1, roughness: 0.42, side: THREE.DoubleSide }),
-    shieldIn: std({ color: '#c0c3c8', metalness: 1, roughness: 0.45, side: THREE.DoubleSide }),
-    alu: std({ color: '#c9ccd1', metalness: 1, roughness: 0.45 }),
+    shield: std({ color: '#d3d5d9', metalness: 0.9, roughness: 0.45, envMapIntensity: 0.9, side: THREE.DoubleSide }),
+    shieldIn: std({ color: '#c0c3c8', metalness: 0.9, roughness: 0.5, envMapIntensity: 0.9, side: THREE.DoubleSide }),
+    alu: std({ color: '#c9ccd1', metalness: 0.9, roughness: 0.5, envMapIntensity: 0.9 }),
     dark: std({ color: '#2a2c30', metalness: 0.4, roughness: 0.6 }),
     black: std({ color: '#060607', metalness: 0.05, roughness: 0.95, side: THREE.DoubleSide }),
-    gold: std({ color: '#e0b155', metalness: 1, roughness: 0.45 }),
+    gold: std({ color: '#e0b155', metalness: 0.9, roughness: 0.5, envMapIntensity: 0.9 }),
     white: std({ color: '#ffffff', map: t.radiator, metalness: 0, roughness: 0.75 }),
     solar: std({ map: t.solar, metalness: 0.3, roughness: 0.35 }) as THREE.MeshStandardMaterial,
-    mirror: std({ color: '#eceef2', metalness: 1, roughness: 0.3 }),
+    mirror: std({ color: '#eceef2', metalness: 0.9, roughness: 0.4, envMapIntensity: 0.9 }),
   };
 }
 type Mats = ReturnType<typeof liteMaterials>;
@@ -291,12 +291,27 @@ type PartProps = {
   showLabel: boolean;
   children: (m: Mats) => ReactNode;
   lite: boolean;
+  glow?: boolean;
 };
 
-function Part({ id, info, progress, hovered, interactive, ghost, explodedTarget, accent, onHover, showLabel, children, lite }: PartProps) {
+function Part({
+  id,
+  info,
+  progress,
+  hovered,
+  interactive,
+  ghost,
+  explodedTarget,
+  accent,
+  onHover,
+  showLabel,
+  children,
+  lite,
+  glow,
+}: PartProps) {
   const g = useRef<THREE.Group>(null);
   const mats = useMemo(() => makeMaterials(lite) as Mats, [lite]);
-  const isHot = hovered === id;
+  const isHot = hovered === id || !!glow;
 
   const invalidate = useThree((st) => st.invalidate);
   useEffect(() => {
@@ -411,6 +426,8 @@ export type SpacecraftProps = {
   shadows?: boolean;
   /** Cheaper materials for small on-screen use (default false). */
   lite?: boolean;
+  /** Tint every part with the accent colour (hover feedback). */
+  glow?: boolean;
 };
 
 /** The observatory as a three.js group, base of the launch ring at y = 0. */
@@ -424,6 +441,7 @@ export function SpherexSpacecraft({
   detColors,
   shadows = false,
   lite = false,
+  glow = false,
 }: SpacecraftProps) {
   const progress = useRef(exploded ? 1 : 0);
   const root = useRef<THREE.Group>(null);
@@ -452,7 +470,7 @@ export function SpherexSpacecraft({
   );
   useEffect(() => () => detTex.forEach((t) => t.dispose()), [detTex]);
 
-  const common = { progress, hovered, interactive, explodedTarget: exploded, accent, onHover, showLabel: showLabels, lite };
+  const common = { progress, hovered, glow, interactive, explodedTarget: exploded, accent, onHover, showLabel: showLabels, lite };
   const info = (id: PartId) => PARTS.find((p) => p.id === id)!;
 
   return (

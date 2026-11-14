@@ -10,7 +10,12 @@ export interface Explain {
 
 export const EXPLAIN = {
   // Header and navigation
-  'nav.home': { screen: 'Header', label: 'Wanderer logo', text: 'Go back to the Explore page, where you pick a place in the sky.' },
+  'nav.home': { screen: 'Header', label: 'Wanderer logo', text: 'Go back to the home page with the live 3D view of SPHEREx.' },
+  'home.start': { screen: 'Home', label: 'Start exploring', text: 'Open the sky map and pick any spot to see every SPHEREx image of it.' },
+  'home.asteroid': { screen: 'Home', label: 'Asteroid example', text: 'Open two real SPHEREx images of asteroid 872 Holda taken 44 hours apart and blink them.' },
+  'home.example': { screen: 'Home', label: 'Example card', text: 'Open this real example in the matching tool.' },
+  'home.scroll': { screen: 'Home', label: 'Scroll to explore', text: 'Scroll down to real examples, the 3D telescope and the path of comet 3I/ATLAS.' },
+  'home.docs': { screen: 'Home', label: 'How it works', text: 'Read how SPHEREx and Wanderer work.' },
   'nav.explore': { screen: 'Header', label: 'Explore tab', text: 'Search for an object or click on the sky map to choose where to look.' },
   'nav.timeline': { screen: 'Header', label: 'Timeline tab', text: 'See every date SPHEREx photographed your target and pick two images to compare.' },
   'nav.compare': { screen: 'Header', label: 'Compare tab', text: 'Put two SPHEREx images of the same spot side by side, blink them or play them as a movie to spot things that moved.' },

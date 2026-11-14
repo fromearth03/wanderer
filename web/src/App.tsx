@@ -10,6 +10,7 @@ import { fmtDec, fmtRa } from './lib/format';
 import { save } from './lib/storage';
 import { searchOf, TARGET_ROUTES, UrlSync, useCarry, useTarget } from './lib/target';
 import Explore from './pages/Explore';
+import Home from './pages/Home';
 import { useStore } from './store';
 
 // Page chunks. The same loaders are called on nav hover so the chunk is ready on click.
@@ -38,7 +39,7 @@ const prefetch = (to: string) => {
 };
 
 const NAV: { to: string; label: string; key: ExplainKey }[] = [
-  { to: '/', label: 'Explore', key: 'nav.explore' },
+  { to: '/explore', label: 'Explore', key: 'nav.explore' },
   { to: '/timeline', label: 'Timeline', key: 'nav.timeline' },
   { to: '/compare', label: 'Compare', key: 'nav.compare' },
   { to: '/movers', label: 'Movers', key: 'nav.movers' },
@@ -98,14 +99,14 @@ function Header() {
   return (
     <>
       <header className="hdr">
-        <Link to={{ pathname: '/', search: carry }} className="brand" data-explain={ex('nav.home')} aria-label="Wanderer home">
+        <Link to="/" className="brand" data-explain={ex('nav.home')} aria-label="Wanderer home">
           <Logo />
           <span className="brand-name">Wanderer</span>
           <span className="brand-sub">SPHEREx sky change explorer</span>
         </Link>
         <nav className={`nav${menu ? ' open' : ''}`} aria-label="Main">
           {NAV.map((n) => (
-            <NavLink key={n.to} to={{ pathname: n.to, search: TARGET_ROUTES.includes(n.to) ? carry : plain }} end={n.to === '/'} onMouseEnter={() => prefetch(n.to)} onFocus={() => prefetch(n.to)} data-explain={ex(n.key)}>
+            <NavLink key={n.to} to={{ pathname: n.to, search: TARGET_ROUTES.includes(n.to) ? carry : plain }} end onMouseEnter={() => prefetch(n.to)} onFocus={() => prefetch(n.to)} data-explain={ex(n.key)}>
               {n.label}
             </NavLink>
           ))}
@@ -152,7 +153,7 @@ function TargetChip() {
         {target.dec!.toFixed(3)}
       </span>
       {target.coll === 'spherex_dr1_deep' && <span className="tgt-coll">deep</span>}
-      <button type="button" className="tgt-x" aria-label="Clear target" title="Clear target" onClick={() => update({ ra: null, dec: null, name: null, a: null, b: null, mode: null, det: null }, '/')} data-explain={ex('target.clear')}>
+      <button type="button" className="tgt-x" aria-label="Clear target" title="Clear target" onClick={() => update({ ra: null, dec: null, name: null, a: null, b: null, mode: null, det: null }, '/explore')} data-explain={ex('target.clear')}>
         {'×'}
       </button>
     </span>
@@ -172,7 +173,8 @@ export default function App() {
         <RouteBoundary resetKey={loc.pathname}>
           <Suspense fallback={<div className="page muted">Loading...</div>}>
             <Routes>
-              <Route path="/" element={<Explore />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/explore" element={<Explore />} />
               <Route path="/timeline" element={<Timeline />} />
               <Route path="/compare" element={<Compare />} />
               <Route path="/movers" element={<Movers />} />
@@ -181,7 +183,7 @@ export default function App() {
               <Route path="/docs" element={<Docs />} />
               <Route path="/about" element={<About />} />
               {/* /lab: 3D demo route, added by the 3D work in src/three. */}
-              <Route path="*" element={<Explore />} />
+              <Route path="*" element={<Home />} />
             </Routes>
           </Suspense>
         </RouteBoundary>

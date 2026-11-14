@@ -28,6 +28,17 @@ shows up as a change. Wanderer is a public web tool that makes those changes eas
 - **Focus mode:** turn it on and every control explains its purpose in a bubble above it. Dark and light themes.
   Your target, image pair and running jobs are kept when you change pages or reload.
 
+## Team Wanderer
+
+| Member | Role |
+|---|---|
+| Ali Akbar (lead) | Idea and end-to-end lead: product and design direction, system architecture, Go gateway and SPHEREx archive pipeline, science approach, 3D direction, integration, testing and launch |
+| Hamza Iqbal | Cloud server and hosting support, Docker setup, HTTPS |
+| Muhammad Fasih Ul Islam | Science pipeline support: FITS processing, alignment, mover checks |
+| Muhammad Ammar | Front end support: Explore, Timeline, Compare |
+| Taimoor Ashraf | 3D support: spacecraft model, Solar System view |
+| Muhammad Zeeshan Abbas | SPHEREx research, documentation, demo |
+
 ## How it works
 
 ```

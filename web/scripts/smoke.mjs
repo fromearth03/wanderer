@@ -59,10 +59,10 @@ async function visit(path) {
 
 try {
   // Plain routes (no target), then the target routes with a target.
-  for (const r of ['/', '/timeline', '/compare', '/movers', '/track', '/spectrum', '/docs', '/about', '/lab']) await visit(r);
+  for (const r of ['/', '/explore', '/timeline', '/compare', '/movers', '/track', '/spectrum', '/docs', '/about', '/lab']) await visit(r);
   // Reset the remembered target between the two passes.
   await page.evaluate(() => localStorage.clear());
-  for (const r of ['/', '/timeline', '/compare', '/movers', '/spectrum']) await visit(`${r}?${TARGET}`);
+  for (const r of ['/explore', '/timeline', '/compare', '/movers', '/spectrum']) await visit(`${r}?${TARGET}`);
   await visit(`/compare?${TARGET}&mode=diff`);
   await visit(`/compare?${TARGET}&mode=flip`);
 
@@ -72,7 +72,7 @@ try {
   for (let i = 0; i < presets.length; i++) {
     where = `preset ${presets[i].id}`;
     await blank();
-    await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto(`${BASE}/explore`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForSelector('.preset', { timeout: 15000 });
     const buttons = await page.$$('.preset');
     if (!buttons[i]) {

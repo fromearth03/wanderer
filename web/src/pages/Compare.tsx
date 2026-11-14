@@ -7,7 +7,7 @@ import { ex } from '../explain';
 import { bandText } from '../lib/epochs';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '../store';
-import { prefetchQueue } from '../lib/imgcache';
+import { isDecoded, prefetchQueue } from '../lib/imgcache';
 import { rgbPick, rgbUrl, useServerCaps } from '../lib/server';
 import { detColor, fmtDate, prefersReducedMotion, um } from '../lib/format';
 import { useKnown } from '../lib/known';
@@ -95,12 +95,32 @@ export default function Compare() {
     const t = setInterval(() => setShowB((b) => !b), blinkMs);
     return () => clearInterval(t);
   }, [mode, playing, blinkMs]);
-  // Flipbook timer
+  // How many flipbook frames are already downloaded and decoded (polled; cheap Map lookups).
+  const [ready, setReady] = useState(0);
+  useEffect(() => {
+    if (mode !== 'flip' || !frames.length) return;
+    const count = () => setReady(frames.reduce((n, f) => n + (isDecoded(url(f)) ? 1 : 0), 0));
+    count();
+    const t = setInterval(count, 700);
+    return () => clearInterval(t);
+  }, [mode, frames, url]);
+  // Flipbook timer: step only through frames that have loaded, so playback never
+  // stalls on a frame that is still coming from the archive.
   useEffect(() => {
     if (mode !== 'flip' || !playing || frames.length < 2) return;
-    const t = setInterval(() => setFrame((f) => (f + 1) % frames.length), 1000 / fps);
+    const t = setInterval(
+      () =>
+        setFrame((f) => {
+          for (let k = 1; k <= frames.length; k++) {
+            const i = (f + k) % frames.length;
+            if (isDecoded(url(frames[i]))) return i;
+          }
+          return f;
+        }),
+      1000 / fps,
+    );
     return () => clearInterval(t);
-  }, [mode, playing, fps, frames.length]);
+  }, [mode, playing, fps, frames, url]);
   useEffect(() => setFrame(0), [flipDet]);
   // Prefetch into the shared decoded-image cache: A and B first, then the
   // flipbook frames nearest the current one. Two at a time, so the browser keeps
@@ -113,7 +133,7 @@ export default function Compare() {
     }
     // Wait until the visible images had their turn, then fill the cache.
     let stop = () => {};
-    const t = setTimeout(() => (stop = prefetchQueue(urls, 2)), mode === 'flip' ? 300 : 1200);
+    const t = setTimeout(() => (stop = prefetchQueue(urls, mode === 'flip' ? 4 : 2)), mode === 'flip' ? 300 : 1200);
     return () => {
       clearTimeout(t);
       stop();
@@ -234,6 +254,7 @@ export default function Compare() {
             <b>
               Frame {frame + 1}/{frames.length}
             </b>{' '}
+            {ready < frames.length && <span className="muted">({ready} of {frames.length} loaded, more arriving) </span>}
             <span style={{ color: detColor(cur.det) }}>D{cur.det}</span>
             <br />
             {fmtDate(cur.date)}

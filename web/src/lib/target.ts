@@ -20,7 +20,7 @@ type Key = (typeof KEYS)[number];
 type Patch = Partial<Record<Key, string | number | null | undefined>> & { pairSource?: WanderState['pairSource'] };
 
 /** Pages where the URL should carry the target. */
-export const TARGET_ROUTES = ['/', '/timeline', '/compare', '/movers', '/spectrum'];
+export const TARGET_ROUTES = ['/explore', '/timeline', '/compare', '/movers', '/spectrum'];
 
 function toStore(patch: Patch): Partial<WanderState> {
   const out: Partial<WanderState> = {};

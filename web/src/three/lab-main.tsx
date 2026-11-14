@@ -45,6 +45,13 @@ function Lab() {
         </button>
       </header>
       {PERF ? <PerfOverlay /> : null}
+      {only === 'hero' ? (
+        <div style={{ position: 'fixed', inset: 0 }}>
+          <Suspense fallback={null}>
+            <SpherexNow height="100%" showControls={false} showReadout interactive frameX={0.22} wheelZoom="modifier" />
+          </Suspense>
+        </div>
+      ) : null}
       <Section id="model" title="SpherexModel">
         <SpherexModel height={560} />
       </Section>
